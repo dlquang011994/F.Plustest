@@ -1285,10 +1285,9 @@ function processExcelBuffer(arrayBuffer) {
 // ================= HÀM KÉO DATA TỪ GOOGLE DRIVE =================
 async function loadDataFromDrive() {
   document.getElementById('loading-overlay').style.display = 'block';
-
   try {
-    // dashboard-data.json is created on GitHub from the source workbook.
-    // The browser therefore downloads only the ready-to-display summary.
+    // File này được GitHub tự chuẩn bị từ file Excel nguồn.
+    // Trình duyệt chỉ cần tải phần dữ liệu Dashboard đã tính sẵn.
     const response = await fetch('./dashboard-data.json', { cache: 'no-store' });
     if (!response.ok) throw new Error('Network Error');
     DATA = await response.json();
