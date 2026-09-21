@@ -1282,13 +1282,26 @@ function processExcelBuffer(arrayBuffer) {
   renderAll();
 }
 
-// ================= HÀM KÉO DATA TỪ GOOGLE DRIVE =================
+// ================= CẦU NỐI DATA TÓM TẮT VỚI QUY TẮC HIỂN THỊ CÓ SẴN =================
+function applySummaryDisplayRules(summary) {
+  const isNARegion = (v) => ['#N/A', 'N/A'].includes(String(v || '').trim().toUpperCase());
+  const monthNumber = (m) => parseFloat(String(m || '').replace(',', '.'));
+
+  summary.months = (summary.months || []).filter(m => monthNumber(m) >= 9);
+  ['vùng_list', 'main_rows', 'luyke_rows', 'vuong_rows', 'shop_rows', 'asm_rows'].forEach(key => {
+    if (!Array.isArray(summary[key])) return;
+    summary[key] = summary[key].filter(row => !isNARegion(typeof row === 'string' ? row : row.vùng));
+  });
+  return summary;
+}
+
+// ================= HÀM KÉO DATA TỪ FILE TÓM TẮT =================
 async function loadDataFromDrive() {
   document.getElementById('loading-overlay').style.display = 'block';
   try {
     const response = await fetch('./dashboard-data.json', { cache: 'no-store' });
     if (!response.ok) throw new Error('Network Error');
-    DATA = await response.json();
+    DATA = applySummaryDisplayRules(await response.json());
     document.getElementById('loading-overlay').style.display = 'none';
     renderAll();
   } catch (error) {
