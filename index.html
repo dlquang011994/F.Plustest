@@ -1285,18 +1285,19 @@ function processExcelBuffer(arrayBuffer) {
 // ================= HÀM KÉO DATA TỪ GOOGLE DRIVE =================
 async function loadDataFromDrive() {
   document.getElementById('loading-overlay').style.display = 'block';
-  
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZGLwWIcCqTCAjVW0FyEQCQYvQ1MP3O5HRiFsQ6tZoN3DEDXq9ys59pXtNrTSA8w/pub?output=xlsx";
-  
+
   try {
-    const response = await fetch(url);
+    // dashboard-data.json is created on GitHub from the source workbook.
+    // The browser therefore downloads only the ready-to-display summary.
+    const response = await fetch('./dashboard-data.json', { cache: 'no-store' });
     if (!response.ok) throw new Error('Network Error');
-    const arrayBuffer = await response.arrayBuffer();
-    processExcelBuffer(arrayBuffer);
+    DATA = await response.json();
+    document.getElementById('loading-overlay').style.display = 'none';
+    renderAll();
   } catch (error) {
     console.error(error);
     document.getElementById('loading-overlay').style.display = 'none';
-    alert('Không thể tải tự động từ Google Drive. Vui lòng tải file thủ công bằng nút phía trên.');
+    alert('Không thể tải dữ liệu Dashboard. Vui lòng thử lại sau ít phút.');
   }
 }
 
