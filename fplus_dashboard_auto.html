@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F.Plus — Dashboard Khai Thác</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@page { size: A4 portrait; margin: 12mm; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html, body {
+  background:#F5F3EF;
+  font-family:'Segoe UI',Calibri,Arial,sans-serif;
+  color:#1a1a1a;
+  font-size:12px;
+}
+
+.page-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.page {
+  background:#fff;
+  width: 297mm;
+  min-height: 210mm;
+  padding: 10mm 12mm 8mm;
+  box-shadow: 0 4px 24px rgba(0,0,0,.18);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── HEADER ── */
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #1F3864;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.hdr h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1F3864;
+  letter-spacing: -.5px;
+}
+.hdr-right { display: flex; align-items: center; gap: 10px; }
+.btn {
+  background: #E87534;
+  color: #1F3864;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover { background: #D4622A; }
+.file-input { display: none; }
+.status { color: #888; font-size: 12px; }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #1F3864;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.tab {
+  padding: 8px 22px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #666;
+  font-size: 14px;
+  border-bottom: 3px solid transparent;
+  user-select: none;
+}
+.tab:hover { color: #2E74B5; }
+.tab.active { color: #1F3864; border-bottom-color: #1F3864; }
+
+.pane { display: none; flex-direction: column; gap: 10px; flex: 1; }
+.pane.active { display: flex; }
+
+/* ── KPI ── */
+.kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  flex-shrink: 0;
+}
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  border-top: 4px solid #2E74B5;
+}
+.card .lbl {
+  font-size: 10px;
+  color: #888;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 5px;
+}
+.card .vals {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.card .w29 { font-size: 15px; color: #888; font-weight: 600; }
+.card .w30 { font-size: 26px; font-weight: 800; color: #1F3864; }
+.card .arr { color: #ccc; font-size: 13px; }
+.card .sub { font-size: 11px; color: #666; }
+.card .sub.up { color: #1E8C4C; font-weight: 600; }
+.card .sub.dn { color: #C00000; font-weight: 600; }
+
+/* ── CHARTS ROW ── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.ch {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 12px 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+.ch .ttl {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1F3864;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 4px;
+}
+.ch canvas {
+  flex: 1;
+  display: block;
+  width: 100% !important;
+}
+
+/* ── SECTIONS ── */
+.sec { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.sec-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #D6E4F0;
+}
+.sec-hd .ttl {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2E74B5;
+}
+.sec-hd .ed {
+  outline: none;
+  border-bottom: 2px dashed #ccc;
+  padding: 0 3px 1px;
+  font-size: 12px;
+  color: #2E74B5;
+  cursor: text;
+  min-width: 200px;
+}
+.sec-hd .ed:focus { border-bottom-color: #2E74B5; }
+
+/* ── FILTERS ── */
+.flt { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.flt-lbl { font-size: 12px; color: #888; font-weight: 600; }
+select, input[type=text] {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+select:focus, input:focus { outline: none; border-color: #2E74B5; }
+
+/* ── TABLE ── */
+.tw {
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  flex: 1;
+  overflow-x: auto;
+}
+.tw table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+th {
+  background: #1F3864;
+  color: #fff;
+  padding: 7px 10px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  user-select: none;
+}
+th:first-child { text-align: left; }
+th.sortable { cursor: pointer; }
+th.sortable:hover { background: #2E74B5; }
+th .arr { display: inline-block; margin-left: 3px; opacity: .5; font-size: 9px; }
+th.sort-asc .arr, th.sort-desc .arr { opacity: 1; color: #E87534; }
+td {
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 12px;
+  border-bottom: 1px solid #edf2f7;
+}
+td:first-child { text-align: left; font-weight: 500; }
+tr:nth-child(even) td { background: #f4f9fd; }
+tr:last-child td { border-bottom: none; }
+tr.tot td { background: #1F3864 !important; color: #fff !important; font-weight: 700; }
+tr.tot td:first-child { text-align: left; }
+.t-pct { color: #2E74B5; font-weight: 600; }
+.t-pos { color: #1E8C4C; font-weight: 600; }
+.t-neg { color: #C00000; font-weight: 600; }
+.t-zero { color: #bbb; }
+
+.meta { font-size: 11px; color: #999; text-align: center; padding: 6px 0 4px; flex-shrink: 0; }
+
+/* ── Ratio color badges ── */
+.t-pct.ratio.ratio-green  { color: #375623; background: #C6EFCE; border-radius: 4px; padding: 1px 5px; display: inline-block; }
+.t-pct.ratio.ratio-yellow { color: #7D6608; background: #FFF3CF; border-radius: 4px; padding: 1px 5px; display: inline-block; }
+.t-pct.ratio.ratio-red    { color: #9C0006; background: #FFC7CE; border-radius: 4px; padding: 1px 5px; display: inline-block; }
+/* ── Sheet Chi tiết: grid chia đều 2 bảng ── */
+.paneGrid {
+  display: grid !important;
+  grid-template-rows: auto 1fr;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+.paneGrid > .sec { flex: unset !important; overflow: hidden; }
+.paneGrid > .sec > .tw { flex: unset !important; overflow: auto; }
+
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="page">
+
+    <div class="hdr">
+      <h1>F.PLUS — Dashboard Khai Thác</h1>
+      <div class="hdr-right">
+        <label class="btn" for="fi">+ Tải file Excel mới</label>
+        <input type="file" id="fi" class="file-input" accept=".xlsx,.xls">
+        <span class="status" id="st">Dữ liệu mẫu W30</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-p="panTong">1. Tổng quan</div>
+      <div class="tab" data-p="panChi">2. Chi tiết</div>
+    </div>
+
+    <!-- TỔNG QUAN -->
+    <div id="panTong" class="pane active">
+      <div class="kpi" id="kpi"></div>
+      <div class="charts-row">
+        <div class="ch"><div class="ttl">Phiếu nhận theo tuần</div><canvas id="cNhan"></canvas></div>
+        <div class="ch"><div class="ttl">Tỉ lệ WoW theo vùng</div><canvas id="cTyLe"></canvas></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <span class="ttl">Phiếu nhận 4 tuần gần nhất</span>
+          <div class="flt">
+            <span class="flt-lbl">Lọc Vùng:</span>
+            <select id="fVung"><option value="">Tất cả</option></select>
+          </div>
+        </div>
+        <div class="tw">
+          <table id="tblMain">
+            <thead><tr>
+              <th class="sortable" data-col="vùng" data-table="tblMain">Vùng<span class="arr"></span></th>
+              <th class="sortable" data-col="w27" data-table="tblMain" data-type="n">W27<span class="arr"></span></th>
+              <th class="sortable" data-col="w28" data-table="tblMain" data-type="n">W28<span class="arr"></span></th>
+              <th class="sortable" data-col="w29" data-table="tblMain" data-type="n">W29<span class="arr"></span></th>
+              <th class="sortable" data-col="w30" data-table="tblMain" data-type="n">W30<span class="arr"></span></th>
+              <th class="sortable" data-col="tổng" data-table="tblMain" data-type="n">Tổng<span class="arr"></span></th>
+              <th class="sortable" data-col="wow_n" data-table="tblMain" data-type="n">WoW Nhận<span class="arr"></span></th>
+              <th class="sortable" data-col="wow_p" data-table="tblMain" data-type="n">WoW Tỉ lệ<span class="arr"></span></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd">
+          <span class="ttl">Luỹ kế tỉ lệ phiếu nhận theo tháng</span>
+        </div>
+        <div class="tw">
+          <table id="tblLuy">
+            <thead><tr>
+              <th class="sortable" data-col="vùng" data-table="tblLuy">Vùng<span class="arr"></span></th>
+              <th class="sortable" data-col="th3" data-table="tblLuy" data-type="n">Th.3<span class="arr"></span></th>
+              <th class="sortable" data-col="th4" data-table="tblLuy" data-type="n">Th.4<span class="arr"></span></th>
+              <th class="sortable" data-col="th5" data-table="tblLuy" data-type="n">Th.5<span class="arr"></span></th>
+              <th class="sortable" data-col="th6" data-table="tblLuy" data-type="n">Th.6<span class="arr"></span></th>
+              <th class="sortable" data-col="th7" data-table="tblLuy" data-type="n">Th.7<span class="arr"></span></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHI TIẾT -->
+    <div id="panChi" class="pane paneGrid">
+      <div class="sec">
+        <div class="sec-hd">
+          <span class="ttl">Số phiếu nhận vào 4 tuần gần nhất theo vùng</span>
+        </div>
+        <div class="tw">
+          <table id="tblVuong">
+            <thead><tr>
+              <th class="sortable" data-col="vùng" data-table="tblVuong">Vùng<span class="arr"></span></th>
+              <th class="sortable" data-col="w27" data-table="tblVuong" data-type="n">W27<span class="arr"></span></th>
+              <th class="sortable" data-col="w28" data-table="tblVuong" data-type="n">W28<span class="arr"></span></th>
+              <th class="sortable" data-col="w29" data-table="tblVuong" data-type="n">W29<span class="arr"></span></th>
+              <th class="sortable" data-col="w30" data-table="tblVuong" data-type="n">W30<span class="arr"></span></th>
+              <th class="sortable" data-col="tổng" data-table="tblVuong" data-type="n">Tổng<span class="arr"></span></th>
+              <th class="sortable" data-col="bán_w30" data-table="tblVuong" data-type="n">Bán W30<span class="arr"></span></th>
+              <th class="sortable" data-col="tỉ_lệ" data-table="tblVuong" data-type="n">Tỉ lệ W30<span class="arr"></span></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec" style="flex: 2">
+        <div class="sec-hd">
+          <span class="ttl">Chi tiết phiếu nhận 4 tuần gần nhất theo shop</span>
+          <div class="flt">
+            <span class="flt-lbl">Vùng:</span>
+            <select id="fAV"><option value="">Tất cả</option></select>
+            <span class="flt-lbl">ASM:</span>
+            <select id="fAA"><option value="">Tất cả</option></select>
+            <span class="flt-lbl">Shop:</span>
+            <input type="text" id="fAS" placeholder="Tìm shop...">
+          </div>
+        </div>
+        <div class="tw" style="flex:1; overflow: auto;">
+          <table id="tblAsm">
+            <thead><tr>
+              <th class="sortable" data-col="asm" data-table="tblAsm">ASM<span class="arr"></span></th>
+              <th class="sortable" data-col="vùng" data-table="tblAsm">Vùng<span class="arr"></span></th>
+              <th class="sortable" data-col="shop" data-table="tblAsm">Shop<span class="arr"></span></th>
+              <th class="sortable" data-col="w27" data-table="tblAsm" data-type="n">W27<span class="arr"></span></th>
+              <th class="sortable" data-col="w28" data-table="tblAsm" data-type="n">W28<span class="arr"></span></th>
+              <th class="sortable" data-col="w29" data-table="tblAsm" data-type="n">W29<span class="arr"></span></th>
+              <th class="sortable" data-col="w30" data-table="tblAsm" data-type="n">W30<span class="arr"></span></th>
+              <th class="sortable" data-col="bán_w30" data-table="tblAsm" data-type="n">Bán W30<span class="arr"></span></th>
+              <th class="sortable" data-col="tỉ_lệ" data-table="tblAsm" data-type="n">Tỉ lệ W30<span class="arr"></span></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta" id="meta"></div>
+  </div>
+</div>
+
+<script>
+const FULL_DATA = {
+  kpi: {"n_w29": 410, "n_w30": 448, "b_w29": 5047, "b_w30": 4863, "tỉ_w29": 0.081236, "tỉ_w30": 0.092124, "wow_n": 38, "wow_p": 0.010888},
+  main: [{"vùng": "Hà Nội", "w27": 54, "w28": 55, "w29": 48, "w30": 47, "tổng": 204, "wow_n": -1, "wow_p": 0.000308}, {"vùng": "Hồ Chí Minh", "w27": 94, "w28": 100, "w29": 115, "w30": 112, "tổng": 421, "wow_n": -3, "wow_p": -0.001233}, {"vùng": "Miền Bắc 1", "w27": 71, "w28": 58, "w29": 61, "w30": 64, "tổng": 254, "wow_n": 3, "wow_p": 0.045267}, {"vùng": "Miền Bắc 2", "w27": 45, "w28": 53, "w29": 56, "w30": 60, "tổng": 214, "wow_n": 4, "wow_p": -0.017167}, {"vùng": "Miền Đông", "w27": 0, "w28": 57, "w29": 52, "w30": 68, "tổng": 177, "wow_n": 16, "wow_p": 0.066835}, {"vùng": "Miền Tây", "w27": 45, "w28": 63, "w29": 49, "w30": 52, "tổng": 209, "wow_n": 3, "wow_p": 0.024766}, {"vùng": "Miền Trung", "w27": 23, "w28": 27, "w29": 29, "w30": 45, "tổng": 124, "wow_n": 16, "wow_p": 0.024925}],
+  luyke: {"rows": [{"vùng": "Hà Nội", "th3": 0.020229, "th4": 0.025976, "th5": 0.019372, "th6": 0.023543, "th7": 0.025485}, {"vùng": "Hồ Chí Minh", "th3": 0.060295, "th4": 0.054312, "th5": 0.045999, "th6": 0.068938, "th7": 0.080638}, {"vùng": "Miền Bắc 1", "th3": 0.181256, "th4": 0.241481, "th5": 0.21802, "th6": 0.252546, "th7": 0.275441}, {"vùng": "Miền Bắc 2", "th3": 0.251768, "th4": 0.306773, "th5": 0.237463, "th6": 0.288889, "th7": 0.280061}, {"vùng": "Miền Đông", "th3": 0, "th4": 0, "th5": 0, "th6": 0, "th7": 0.151024}, {"vùng": "Miền Tây", "th3": 0.181445, "th4": 0.323711, "th5": 0.238245, "th6": 0.319182, "th7": 0.365854}, {"vùng": "Miền Trung", "th3": 0.026591, "th4": 0.037197, "th5": 0.029335, "th6": 0.040622, "th7": 0.04698}], "tot": {"vùng": "Tổng", "th3": 0.05489, "th4": 0.06904, "th5": 0.053255, "th6": 0.070764, "th7": 0.084956}},
+  vuong: {"rows": [{"vùng": "Hà Nội", "w27": 54, "w28": 55, "w29": 48, "w30": 47, "tổng": 204, "bán_w30": 1925, "tỉ_lệ": 0.024416}, {"vùng": "Hồ Chí Minh", "w27": 94, "w28": 100, "w29": 115, "w30": 112, "tổng": 421, "bán_w30": 1290, "tỉ_lệ": 0.086822}, {"vùng": "Miền Bắc 1", "w27": 71, "w28": 58, "w29": 61, "w30": 64, "tổng": 254, "bán_w30": 216, "tỉ_lệ": 0.296296}, {"vùng": "Miền Bắc 2", "w27": 45, "w28": 53, "w29": 56, "w30": 60, "tổng": 214, "bán_w30": 221, "tỉ_lệ": 0.271493}, {"vùng": "Miền Đông", "w27": 0, "w28": 57, "w29": 52, "w30": 68, "tổng": 177, "bán_w30": 367, "tỉ_lệ": 0.185286}, {"vùng": "Miền Tây", "w27": 45, "w28": 63, "w29": 49, "w30": 52, "tổng": 209, "bán_w30": 158, "tỉ_lệ": 0.329114}, {"vùng": "Miền Trung", "w27": 23, "w28": 27, "w29": 29, "w30": 45, "tổng": 124, "bán_w30": 686, "tỉ_lệ": 0.065598}], "tot": {"vùng": "Tổng", "w27": 332, "w28": 413, "w29": 410, "w30": 448, "tổng": 1603, "bán_w30": 4863, "tỉ_lệ": 0.092124}},
+  asm: [{"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "DBN 48 Khối Tân Thủy", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "DBN 504 Phường Him Lam", "w27": 1, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "DBN Tổ 6 Tân Thanh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "DBN Tổ 7 Nam Thanh", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "HBH 1 Trương Hán Siêu", "w27": 2, "w28": 3, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "HBH 240 tổ 22", "w27": 4, "w28": 3, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "HBH 426 Cù Chính Lan", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "HBH KĐT Đông Dương - Lương Sơn", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "PTO 1174 Hùng Vương", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "PTO 262 Phố Tân Thành", "w27": 3, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "PTO 27 Ba Mỏ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "PTO 467 Lạc Long Quân", "w27": 0, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "SLA 308 Lê Duẩn - Chiềng Sinh", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "SLA 50 Lê Thanh Nghị - Mộc Châu", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "SLA Tiểu khu 5- Hát Lót", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "AnhLT32@fpt.com", "vùng": "Miền Bắc 1", "shop": "SLA Tổ 12 Chiềng Lề", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 173B Trường Chinh", "w27": 2, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 20, "tỉ_lệ": 0.05}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 186 Đào Xuyên - Đa Tốn", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 203 Nguyễn Đức Thuận", "w27": 2, "w28": 3, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 232 Ngô Gia Tự", "w27": 1, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 24 Hồ Tùng Mậu", "w27": 1, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 28, "tỉ_lệ": 0.035714}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 29 Phùng Hưng", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 31, "tỉ_lệ": 0.032258}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 378 Nguyễn Trãi", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 33, "tỉ_lệ": 0.030303}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 640 Nguyễn Trãi", "w27": 0, "w28": 3, "w29": 1, "w30": 0, "bán_w30": 28, "tỉ_lệ": 0.0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI 655-657 Nguyễn Văn Linh", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI G-125 Lạc Long Quân", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI G-350 Minh Khai", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI G-8 Phan Bội Châu", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI Khu Đấu Giá - Tân Triều", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 21, "tỉ_lệ": 0.047619}, {"asm": "BinhHD@FPT.COM", "vùng": "Hà Nội", "shop": "HNI Vĩnh Quỳnh - Thanh Trì", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 132 Quốc Lộ 91 - Châu Phú", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 17 Nguyễn Hữu Cảnh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 188 Tôn Đức Thắng - Tân Châu", "w27": 0, "w28": 2, "w29": 3, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 243 Lê Lợi - Châu Đốc", "w27": 0, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 244 Trần Hưng Đạo - Long Xuyên", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 30 Nguyễn Văn Thoại", "w27": 0, "w28": 1, "w29": 3, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 305 Nguyễn Huệ", "w27": 2, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 311 Trần Hưng Đạo - Long Xuyên", "w27": 1, "w28": 5, "w29": 2, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 318 Thới Hòa Nhà Bàng- Tịnh Biên", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 361 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 455 Tỉnh Lộ 954 - Phú Mỹ", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG 92 Trần Hưng Đạo - Tri Tôn", "w27": 0, "w28": 1, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "AGG Cần Đăng - Châu Thành", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "KGG 02 Nguyễn Chí Thanh", "w27": 1, "w28": 3, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "KGG 136 Nguyễn Trung Trực", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ChiMK@fpt.com", "vùng": "Miền Tây", "shop": "KGG 159 Trần Phú", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 109 Nguyễn Huệ", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 243A Quốc Lộ 13", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 32 Khu phố 2 - Chơn Thành", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 41 Đường ĐT741", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 01 Trần Hưng Đạo - Cần Đước", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 02C Phước Lợi - Bến Lức", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 2 Nguyễn Thái Bình", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 2 Ngô Quyền", "w27": 0, "w28": 2, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 21 Nguyễn Hữu Thọ", "w27": 0, "w28": 0, "w29": 2, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "LAN 68 Hùng Vương", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 1089 Cách Mạng Tháng Tám", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 116 Khu Phố 1 Tân Châu", "w27": 0, "w28": 0, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 127 Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 619 Cách Mạng Tháng Tám", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "CongVT3@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 867 Cách Mạng Tháng 8 2", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 139/1 Phố 1A - An Phú", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 183 Huỳnh Văn Lũy", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 187 Đường DT747 Hội Nghĩa", "w27": 0, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 5/171 Thủ Khoa Huân", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 637 Huỳnh Văn Lũy", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG Chợ Phú Chánh Cũ - Tân Uyên", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG Chợ Quang Vinh - Tân Uyên", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG E13/1 Thuận Giao", "w27": 1, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 157 Lê Văn Việt", "w27": 3, "w28": 4, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 170 Quốc Lộ 1K", "w27": 0, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 186 Võ Văn Ngân - Thủ Đức", "w27": 1, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 231 Nơ Trang Long", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 21, "tỉ_lệ": 0.0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 237A Phan Văn Trị", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 10, "tỉ_lệ": 0.1}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 315 Lê Quang Định", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 20, "tỉ_lệ": 0.0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 465A Kha Vạn Cân", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 469 Bạch Đằng", "w27": 1, "w28": 2, "w29": 1, "w30": 2, "bán_w30": 40, "tỉ_lệ": 0.05}, {"asm": "DanhNT13@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 667A Lê Văn Việt", "w27": 1, "w28": 0, "w29": 4, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH 221-223 Trần Phú - Hương Khê", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH 30-32 Trần Phú", "w27": 0, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH 40 Xô Viết Nghệ Tĩnh", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH 43 Trần Phú", "w27": 2, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH Khu Châu Phố", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH Khối 4 Bắc Hồng - Hồng Lĩnh", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH Phố Liên Phú - Kỳ Anh", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "HTH Tổ Dân Phố 13", "w27": 0, "w28": 0, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "NDH 12 Giải Phóng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "NDH 174 Trần Hưng Đạo", "w27": 0, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "NDH Phố Chợ Cầu - Hải Hậu", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "NDH Tân Lập - Ý Yên", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "TBH 136-138 Tiểu Hoàng", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "TBH 355 Lý Bôn", "w27": 1, "w28": 5, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "TBH 792 Lý Bôn", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "TBH Khu Nhân Cầu 3", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "DuongTT8@FPT.COM", "vùng": "Miền Bắc 2", "shop": "TBH Tổ 2 Khu 1 Đông Hưng", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "BTE 298A-299 Đồng Khởi", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "BTE 77C Đồng Khởi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "BTE Giao Long - Châu Thành", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "HUG Số 2 Ngô Quốc Trị", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "STG 159 Hai Bà Trưng", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "STG 89 Hùng Vương", "w27": 1, "w28": 0, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "TVH 27A Điện Biên Phủ", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "TVH 289 Nguyễn Đáng", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "VLG 037 Cái Vồn - Bình Minh", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "VLG 139 Lê Thái Tổ", "w27": 0, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "VLG 14A Đinh Tiên Hoàng", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HaiND19@fpt.com", "vùng": "Miền Tây", "shop": "VLG Hòa Phú - Long Hồ", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 151 - 153 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 237 Thống Nhất", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 245 Thủ Khoa Huân", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 34-36 Trần Quý Cáp", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 52 Lê Duẩn", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "BTN 68 Lê Lợi", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 01-03 Lạc Long Quân", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 03 Lê Hồng Phong - Ninh Diêm", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 191 Hùng Vương - Vạn Giã", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 2038 Hùng Vương – Cam Ranh", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 236 Thống Nhất", "w27": 0, "w28": 0, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 424 Trần Quý Cáp", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 43 Cao Thắng", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 630 Đường 2 Tháng 4", "w27": 0, "w28": 0, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 69 Quang Trung", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 77-79 Thống Nhất", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA 96 Thái Nguyên", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuCD@fpt.com", "vùng": "Miền Đông", "shop": "KHA G-23 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 159 Nguyễn Phong Sắc", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 180 Trần Hưng Đạo", "w27": 0, "w28": 3, "w29": 1, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 47 Nguyễn Thị Minh Khai", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN G-45 Nguyễn Thị Minh Khai", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Khối 6 Cầu Giát", "w27": 3, "w28": 5, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Khối Bắc Hồ K17", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 175 Trần Phú", "w27": 1, "w28": 3, "w29": 0, "w30": 0, "bán_w30": 68, "tỉ_lệ": 0.0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 199 Thị Trấn Nga Sơn", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 240 Khu Phố 2", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 695 Lam Sơn", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 77 Nguyễn Huệ", "w27": 3, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Bi Kiều - Nông Cống", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA G-84A Nguyễn Trãi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Khu phố 2 - Yên Cát", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Minh Thanh - Minh Lộc", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Số 1 Cổng Chợ Lèn", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Tiểu Khu 6 - Nghi Sơn", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "HieuLT16@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Xuân Lâm - Nghi Sơn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 163 Trần Phú", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 229 Quang Trung - Phù Cát", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 254 Nguyễn Thái Học", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 267 Lê Hồng Phong", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 308 Lê Duẩn - Đập Đá", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 47 Trần Phú - Tuy Phước", "w27": 1, "w28": 1, "w29": 1, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 52 Tăng Bạt Hổ", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "BDH 777 Trần Hưng Đạo", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "DLK 37 Lê Thánh Tông", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "DLK 53 Nguyễn Tất Thành", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "DLK 55 Hùng Vương - Quảng Phú", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "DLK 555 Giải Phóng - Ea H’leo", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "KhanhNQ22@fpt.com", "vùng": "Miền Trung", "shop": "DLK 79 Nguyễn Tất Thành - Krông Năng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "DAG 07 Nguyễn Văn Thoại", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 71, "tỉ_lệ": 0.0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "DAG 204 Nguyễn Tri Phương", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 23, "tỉ_lệ": 0.043478}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "DAG 360 Lê Văn Hiến", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 19, "tỉ_lệ": 0.0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "DAG 671 Tôn Đức Thắng - Hòa Khánh", "w27": 2, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 73, "tỉ_lệ": 0.013699}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "DAG Lô A1 Nguyễn Văn Linh nối dài", "w27": 4, "w28": 3, "w29": 1, "w30": 1, "bán_w30": 133, "tỉ_lệ": 0.007519}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QBH 102 Hùng Vương - Ba Đồn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QBH 156 Trần Hưng Đạo", "w27": 1, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QBH 24 Trần Hưng Đạo - Đồng Hới", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QBH 85 Hùng Vương - Ba Đồn", "w27": 0, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QBH Tổ 8 Kiến Giang", "w27": 2, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QNM 173 Lý Thường Kiệt-Hội An", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QNM 556 Hai Bà Trưng - Hội An", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QTI 122 Quốc Lộ 9B - Đông Hà", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QTI 190 Trần Hưng Đạo", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QTI 21 Hùng Vương", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "LongTV9@fpt.com", "vùng": "Miền Trung", "shop": "QTI 36 Lê Duẩn", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "DKG 28 Nguyễn Tất Thành - Đắk Mil", "w27": 0, "w28": 1, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "DKG 81 Huỳnh Thúc Kháng", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "DKG TDP1 Đức An – Đắk Song", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "DKG Tổ 1 Kiến Đức", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 05 Phan Chu Trinh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 114 Đường 3/2", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 163 Đường 2/4 - Đơn Dương", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 33 La Sơn Phu Tử", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 39 Thống Nhất", "w27": 0, "w28": 6, "w29": 5, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 486 Quốc Lộ 20 - Đức Trọng", "w27": 0, "w28": 0, "w29": 3, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 539 Trần Phú - Bảo Lộc", "w27": 0, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 73 Trương Công Định", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 777 Hùng Vương", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG 815 Hùng Vương", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG G-29 Phan Đình Phùng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG Liên Trung - Tân Hà", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhDH10@fpt.com", "vùng": "Miền Đông", "shop": "LDG Quốc Lộ 20 Lộc An - Bảo Lâm", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "DAG 137 Ông Ích Đường", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 46, "tỉ_lệ": 0.021739}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "DAG 826 Ngô Quyền", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 54, "tỉ_lệ": 0.0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "GLI 23 Nguyễn Tất Thành - Pleiku", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "GLI 350-352 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "GLI 39 Trần Phú", "w27": 0, "w28": 1, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "KTM 255 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "KTM 390 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "KTM 475A Hùng Vương - Đắk Hà", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "KTM 696 Phan Đình Phùng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNI 104 - 106 Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNI 280 Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNI 397 Nguyễn Văn Linh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNI 725 Quang Trung", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNM 295 Phan Châu Trinh", "w27": 1, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNM 30 Nguyễn Hoàng", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "MinhNLH@fpt.com", "vùng": "Miền Trung", "shop": "QNM 56 Phan Châu Trinh", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 06 Phố Lạc Trung", "w27": 1, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 69, "tỉ_lệ": 0.014493}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 10 Nguyễn Xiển - Ngã Tư Nguyễn Trãi - Nguyễn Xiển", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 30, "tỉ_lệ": 0.033333}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 162 Phố Tía - Thường Tín", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 166 Tiểu khu Phú Mỹ - Phú Xuyên", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 182 Lê Duẩn", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 34, "tỉ_lệ": 0.0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 216 Thái Hà", "w27": 0, "w28": 4, "w29": 5, "w30": 4, "bán_w30": 79, "tỉ_lệ": 0.050633}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 22 Nguyễn Khang", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 22, "tỉ_lệ": 0.045455}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 228 Phố Ga - Thường Tín", "w27": 4, "w28": 3, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 325 Phố Huế", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 21, "tỉ_lệ": 0.047619}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 350 Minh Khai - Cầu Mai Động", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 35, "tỉ_lệ": 0.0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 420 Nguyễn Văn Cừ", "w27": 2, "w28": 3, "w29": 2, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 45 Thái Hà", "w27": 3, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 89, "tỉ_lệ": 0.011236}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 482 Ngọc Hồi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 525 Nguyễn Trãi", "w27": 1, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 36, "tỉ_lệ": 0.0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 637 Quang Trung", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 18, "tỉ_lệ": 0.0}, {"asm": "NgaTTT5@fpt.com", "vùng": "Hà Nội", "shop": "HNI 79B Kim Ngưu", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 24, "tỉ_lệ": 0.0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DAG 157 Hàm Nghi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 34, "tỉ_lệ": 0.0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DAG 318 Lê Duẩn", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 59, "tỉ_lệ": 0.016949}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DAG 422 Núi Thành", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 64, "tỉ_lệ": 0.0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 246 Giải Phóng", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 249 Lê Duẩn – Ea Knốp", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 279 Giải Phóng - Phước An", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 400 Lê Duẩn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 436 Hùng Vương - Buôn Hồ", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 69K Phan Bội Châu", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "DLK 90 Nguyễn Tất Thành", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "PYN 206 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "PYN 363 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "PYN 383 Nguyễn Huệ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "QNM 01 Đỗ Đăng Tuyển - Đại Lộc", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "NganTPT@fpt.com", "vùng": "Miền Trung", "shop": "QNM 64 Trần Nhân Tông", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR G-155 Nguyễn Thái Học", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 197 Thống Nhất", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 203 Nguyễn Thái Sơn", "w27": 1, "w28": 4, "w29": 3, "w30": 3, "bán_w30": 19, "tỉ_lệ": 0.157895}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 227 Phạm Văn Chiêu", "w27": 1, "w28": 2, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 26 Phan Huy Ích", "w27": 1, "w28": 3, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 261 Khánh Hội", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 88, "tỉ_lệ": 0.011364}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 318 Hoàng Văn Thụ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 33, "tỉ_lệ": 0.0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 368 Tô Ký", "w27": 0, "w28": 1, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 395 Nguyễn Văn Quá", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 404 Nguyễn Oanh", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 418 Nguyễn Văn Nghi", "w27": 1, "w28": 3, "w29": 0, "w30": 2, "bán_w30": 30, "tỉ_lệ": 0.066667}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 46 Nguyễn Ảnh Thủ", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 489 Huỳnh Tấn Phát", "w27": 4, "w28": 3, "w29": 5, "w30": 5, "bán_w30": 45, "tỉ_lệ": 0.111111}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 56/6C Phan Văn Hớn", "w27": 0, "w28": 2, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 98/4A Nguyễn Văn Quá", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM Fstudio 141 Trần Não", "w27": 4, "w28": 2, "w29": 2, "w30": 2, "bán_w30": 47, "tỉ_lệ": 0.042553}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM G-376A Nguyễn Thị Thập", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhatHQ@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM G-42 Trần Não", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 167 Ngô Gia Tự", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 35, "tỉ_lệ": 0.057143}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 213 Trần Nguyên Hãn", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 35, "tỉ_lệ": 0.028571}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 23 Trần Tất Văn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 238 Đông Thái - Vĩnh Bảo", "w27": 4, "w28": 3, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 242-244 Đà Nẵng", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 19, "tỉ_lệ": 0.0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 283 Trường Chinh - Kiến An", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 17, "tỉ_lệ": 0.0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 39 Tôn Đức Thắng - An Dương", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 23, "tỉ_lệ": 0.043478}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 42 Minh Đức", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 46 Trần Tất Văn", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 471 Lương Khánh Thiện", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG Chợ Thanh Sơn - Xuân La", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG G-7 Nguyễn Đức Cảnh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "TNN 217 Hoàng Văn Thụ", "w27": 4, "w28": 2, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "TNN 347/1 Cách mạng tháng 8", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "TNN G-217 Hoàng Văn Thụ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "TNN Ngã Tư Úc Sơn - Phú Bình", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuNV8@fpt.com", "vùng": "Miền Bắc 1", "shop": "TNN Phố Chợ 1 - Đại Từ", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "BDH 3054 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "BDH 498 Quang Trung - Hoài Nhơn", "w27": 0, "w28": 0, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "DAG 186 Tôn Đức Thắng", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 34, "tỉ_lệ": 0.029412}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "DAG 592 Điện Biên Phủ", "w27": 1, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 32, "tỉ_lệ": 0.03125}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "DAG G-318 Lê Duẩn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "DAG G-A8 Võ Văn Kiệt", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "DAG Lô A8 Võ Văn Kiệt", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 44, "tỉ_lệ": 0.022727}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "QNI 198 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "QNI 411 Quang Trung", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "QNI 463 Nguyễn Nghiêm", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "QNM 01 Trần Thủ Độ", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH 105 Hùng Vương", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH 1134 Nguyễn Tất Thành", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH 36 Trần Cao Vân", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH 78 Hai Bà Trưng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH 87 An Dương Vương", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongNH28@fpt.com", "vùng": "Miền Trung", "shop": "TTH G-255 Bà Triệu", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 01 Trường Chinh - Hiệp Hòa", "w27": 1, "w28": 4, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 100 Nguyễn Thị Lưu", "w27": 3, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 114 Xương Giang", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 2 Xương Giang", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 112 Nguyễn Văn Cừ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 142 Khu 1", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 2 Nguyễn Văn Cừ", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 203 Ngô Gia Tự", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 245 Thị Cầu", "w27": 1, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 394 Âu Cơ- Thuận Thành", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 397 Ngô Gia Tự", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH Khu Phố Công Hà - Thuận Thành", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH Mao Trung - Quế Võ", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH Ngã Ba Đông Yên-YP", "w27": 0, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN 28A Bần Yên Nhân", "w27": 2, "w28": 2, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN Dân Tiến - Khoái Châu", "w27": 1, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH 173 Đinh Tiên Hoàng", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH 20 Phố Trì Chính", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "PhuongTQ32@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH Yên Ninh - Yên Khánh", "w27": 1, "w28": 0, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "LCI 240 Thạch Sơn - Sa Pa", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "LCI 433 Hoàng Liên", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "LCI 488 Hoàng Liên", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "LCI 55 Nguyễn Huệ", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "LCI Lô 8 Lý Công Uẩn", "w27": 4, "w28": 3, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "PTO 1826 Hùng Vương", "w27": 1, "w28": 3, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "PTO 2633 Hùng Vương", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "PTO 52 Phố Đồng Tâm", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "PTO Sông Thao - Cẩm Khê", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "TNN 216 Hoàng Văn Thụ", "w27": 3, "w28": 1, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "TNN 545 Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "TNN Tổ 5 Chùa Hang", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC 1 Nguyễn Văn Linh", "w27": 2, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC 11 Trần Phú", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC 126 Dương Tĩnh", "w27": 2, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC 145 Hai Bà Trưng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC Phố Me - Tam Dương", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuanNH10@FPT.COM", "vùng": "Miền Bắc 1", "shop": "VPC Thôn Bắc Cường", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR 148 Quốc Lộ 55 - Phước Bửu", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR 17 Hải Bình - Long Hải", "w27": 1, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR 240 Hùng Vương", "w27": 0, "w28": 2, "w29": 2, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR 501-503 Cách mạng Tháng 8", "w27": 3, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR Tổ 12 Tân Phú- Phú Mỹ", "w27": 1, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "BAR Tổ 2 Ấp Phước Lập", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 1 Hậu Giang", "w27": 1, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 30, "tỉ_lệ": 0.066667}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 149 Cách Mạng Tháng Tám", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 34, "tỉ_lệ": 0.0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 155 Liên Tỉnh 5", "w27": 1, "w28": 0, "w29": 0, "w30": 4, "bán_w30": 26, "tỉ_lệ": 0.153846}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 176 Ông Ích Khiêm", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 25, "tỉ_lệ": 0.0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 190 Nguyễn Thị Thập", "w27": 0, "w28": 2, "w29": 1, "w30": 3, "bán_w30": 28, "tỉ_lệ": 0.107143}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 192 Cách Mạng Tháng 8", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 10, "tỉ_lệ": 0.0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 202 Nguyễn Thị Minh Khai", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 37, "tỉ_lệ": 0.027027}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 516-518-520 Dương Bá Trạc", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 31, "tỉ_lệ": 0.0}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 7 Lê Đại Hành", "w27": 1, "w28": 1, "w29": 0, "w30": 3, "bán_w30": 30, "tỉ_lệ": 0.1}, {"asm": "QuyNT5@FPT.COM", "vùng": "Hồ Chí Minh", "shop": "HCM 923 Lê Văn Lương", "w27": 0, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 15, "tỉ_lệ": 0.133333}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "BTN 278 Đường 3/2 TT Đức Tài", "w27": 0, "w28": 2, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 01 Khổng Tử - Long Khánh", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 04/N Phúc Nhạc 2", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 07 Tây Lạc", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 31, "tỉ_lệ": 0.0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 2150 Quốc Lộ 1A - Xuân Tâm", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 2248 Phương Mai - Tân Phú", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 246 Hùng Vương - Gia Ray", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 30/4 Trảng Bom", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 353 Bùi Văn Hòa", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 22, "tỉ_lệ": 0.0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 464 Lê Duẩn - Long Thành", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 55, "tỉ_lệ": 0.018182}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 491 Lê Duẩn", "w27": 0, "w28": 1, "w29": 3, "w30": 0, "bán_w30": 36, "tỉ_lệ": 0.0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 65 Quốc Lộ 20 - TT Định Quán", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 660 Đồng Khởi-Biên Hòa", "w27": 0, "w28": 3, "w29": 0, "w30": 2, "bán_w30": 35, "tỉ_lệ": 0.057143}, {"asm": "QuyenHTB2@FPT.COM", "vùng": "Miền Đông", "shop": "DNI Số 6/1A Tam Hòa", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 30, "tỉ_lệ": 0.0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 129 Nguyễn Thị Minh Khai", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 184 Lê Duẩn - Bến Thủy", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN 28 Lê Lợi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Khối 2 Đô Lương", "w27": 1, "w28": 2, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Khối 3 Yên Thành 2", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Khối 4 Thanh Chương", "w27": 2, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "NAN Ngã Tư Chợ Sa Nam", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 115 Khu Phố 2 - Quảng Xương", "w27": 0, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 37, "tỉ_lệ": 0.054054}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 159 Lê Lợi - Thọ Xuân", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 217 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 48, "tỉ_lệ": 0.020833}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 325 An Dương Vương", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 40, "tỉ_lệ": 0.0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 555 Tiểu Khu 2 - Quán Lào", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 656 Bà Triệu", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 28, "tỉ_lệ": 0.0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 90 Lê Lợi - Sầm Sơn", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA 901 Phố Cống - Ngọc Lặc", "w27": 1, "w28": 1, "w29": 3, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Khu 3 Lam Sơn - Thọ Xuân 2", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "SonLV9@fpt.com", "vùng": "Miền Bắc 2", "shop": "THA Phố Giắt - Triệu Sơn", "w27": 1, "w28": 0, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 416/23 DT 746 -Bình Chuẩn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 551 Đại Lộ Bình Dương - Thủ Dầu Một", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 77/20 Đại lộ Bình Dương-Thủ dầu 1", "w27": 1, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG FStudio 15 Yersin", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG G-77/20 Đại lộ Bình Dương-Thủ Dầu Một", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 106 Hà Duy Phiên", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 121 Lê Lợi 2", "w27": 2, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 149 Tô Ngọc Vân", "w27": 2, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 192A Nguyễn Thị Định", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 246 Đỗ Xuân Hợp", "w27": 2, "w28": 2, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 344 Lê Văn Khương", "w27": 0, "w28": 1, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 358 Nguyễn Duy Trinh", "w27": 2, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 42 Trần Não", "w27": 0, "w28": 2, "w29": 2, "w30": 1, "bán_w30": 37, "tỉ_lệ": 0.027027}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 784 Tỉnh Lộ 43 - Thủ Đức", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 789 Tỉnh Lộ 43", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM G-121 Lê Lợi", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TaiCD@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM G-Landmark 81", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "HAG 135 Trần Hưng Đạo", "w27": 2, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "HAG 313 Nguyễn Trãi", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "HAG 495 Trường Chinh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LCI 30 Nhạc Sơn", "w27": 2, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LCI 561 Hoàng Quốc Việt", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LCI Tổ 6 Bát Xát", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LCU 330 Trần Phú", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LCU Khu 3 - Than Uyên", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN 117 Trần Đăng Ninh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "TQG 01-02 Tổ Dân Phố Xây Dựng - Sơn Dương", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "TQG 168 Bình Thuận", "w27": 1, "w28": 1, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "TQG 347-353 Đường 17/8", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "TQG 397 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "YBI 15 Điện Biên", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "YBI 224 Điện Biên", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "YBI 628 Điện Biên", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanTM@fpt.com", "vùng": "Miền Bắc 1", "shop": "YBI 769 Điện Biên", "w27": 2, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 10-12 Cầu Diễn", "w27": 3, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 60, "tỉ_lệ": 0.0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 127 Phố Xốm - Chợ Xốm", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 155 Vân Trì - Đông Anh", "w27": 1, "w28": 1, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 2 Núi Đôi", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 39 Nguyễn Hoàng", "w27": 1, "w28": 1, "w29": 2, "w30": 1, "bán_w30": 37, "tỉ_lệ": 0.027027}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 419 Quảng Bị - Chương Mỹ", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 422 Cầu Giấy", "w27": 4, "w28": 3, "w29": 1, "w30": 1, "bán_w30": 109, "tỉ_lệ": 0.009174}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 438 Khương Đình", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 27, "tỉ_lệ": 0.0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 55 Đại Đồng", "w27": 2, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 21, "tỉ_lệ": 0.047619}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 61 Trần Duy Hưng", "w27": 5, "w28": 1, "w29": 0, "w30": 2, "bán_w30": 79, "tỉ_lệ": 0.025316}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 70 Quang Trung - Vân Đình", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 742 Kim Giang", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 10, "tỉ_lệ": 0.0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI 792 Quang Trung", "w27": 1, "w28": 3, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI Bắc Linh Đàm - Chợ Đại Từ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 52, "tỉ_lệ": 0.0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI Hải Bối - Đông Anh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI Phố Lưu Phái - Ngũ Hiệp", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThangNV19@fpt.com", "vùng": "Hà Nội", "shop": "HNI Xóm Nội - Chúc Sơn", "w27": 3, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR 1011 đường 30/4", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR 155 Nguyễn Thái Học", "w27": 2, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR 258 Ba Cu", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR 452 Đường 30/4", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BAR 563 Nguyễn An Ninh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 05 Nguyễn Tri Phương", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 11 QL13 Ngã 3 Bằng Lăng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 262 Nguyễn An Ninh - Dĩ An", "w27": 2, "w28": 0, "w29": 3, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 27 Độc Lập", "w27": 0, "w28": 0, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 27/17 Bình Phước B", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 39 Tổ 3 Phước Thạnh", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 429 Phú Nghị - Bến Cát", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 63D Nguyễn Văn Tiết", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG An Tây - Bến Cát", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG Lô 31M Uyên Hưng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThanhNH32@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG Lô 6-7 Đường D1 - Mỹ Phước", "w27": 0, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 1185 Tỉnh Lộ 8 Củ Chi", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 1288 Tỉnh Lộ 10 - Bình Tân", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 189 Nguyễn Sơn", "w27": 2, "w28": 0, "w29": 3, "w30": 0, "bán_w30": 35, "tỉ_lệ": 0.0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 229 Nguyễn Thị Tú 2", "w27": 0, "w28": 1, "w29": 3, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 24/3 Phan Văn Hớn", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 256 Nguyễn Tri Phương", "w27": 1, "w28": 0, "w29": 3, "w30": 2, "bán_w30": 28, "tỉ_lệ": 0.071429}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 337 Lê Văn Quới", "w27": 1, "w28": 1, "w29": 3, "w30": 2, "bán_w30": 15, "tỉ_lệ": 0.133333}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 4/18 Ấp Nam Thới", "w27": 1, "w28": 0, "w29": 1, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 421 Quốc Lộ 22", "w27": 0, "w28": 2, "w29": 3, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 480 Lê Trọng Tấn", "w27": 1, "w28": 0, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 538Bis Xô Viết Nghệ Tĩnh", "w27": 6, "w28": 5, "w29": 12, "w30": 9, "bán_w30": 97, "tỉ_lệ": 0.092784}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 608 Trần Hưng Đạo", "w27": 2, "w28": 0, "w29": 1, "w30": 3, "bán_w30": 71, "tỉ_lệ": 0.042254}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 63 Bis Gò Dầu", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 24, "tỉ_lệ": 0.0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 705QL22 TT Củ Chi", "w27": 4, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 831 Tân Kỳ Tân Quý", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 890 Tỉnh Lộ 10 - Bình Tân", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM D1/1 QL 1A Bình Chánh", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThoBX@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM D16/41 Đoàn Nguyễn Tuân - Bình Chánh", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 5 Hùng Vương", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "BPC 978 Phú Riềng Đỏ", "w27": 0, "w28": 3, "w29": 1, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 2 Bùi Trọng Nghĩa", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 24/11 KP Long Điềm", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 32, "tỉ_lệ": 0.03125}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 26/6 Cách Mạng Tháng 8", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 24, "tỉ_lệ": 0.083333}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 282 Phạm Văn Thuận", "w27": 0, "w28": 5, "w29": 4, "w30": 7, "bán_w30": 73, "tỉ_lệ": 0.09589}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "DNI 465 Khu 4 An Phước", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 29, "tỉ_lệ": 0.0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "NTN 217 Thống Nhất", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "NTN 362 Thống Nhất", "w27": 0, "w28": 3, "w29": 2, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "NTN 412 Ngô Gia Tự", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "NTN 697 Đường 21/8", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 2/227 Thị Trấn Gò Dầu", "w27": 0, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 202 Quốc Lộ 22", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 247 Đường 782", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ThucPD@FPT.COM", "vùng": "Miền Đông", "shop": "TNH 3427 Quốc lộ 22", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 1126B Đường DT747", "w27": 1, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 161 Cách Mạng Tháng 8", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 2 Nguyễn Du, Bình Hòa - Thuận An", "w27": 0, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 32A5 Khu Công Nghiệp Bàu Bàng", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "BDG 91-93 Thống Nhất", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 1-3 Hoàng Văn Thụ", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 39, "tỉ_lệ": 0.0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 19A Hoàng Hoa Thám", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 12, "tỉ_lệ": 0.0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 224 Tên Lửa", "w27": 0, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 25, "tỉ_lệ": 0.04}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 24/10 Huỳnh Tấn Phát", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 305 Tô Hiến Thành", "w27": 2, "w28": 1, "w29": 5, "w30": 2, "bán_w30": 41, "tỉ_lệ": 0.04878}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 306A Trường Chinh", "w27": 2, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 43, "tỉ_lệ": 0.023256}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 311 Lê Văn Sỹ", "w27": 1, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 37, "tỉ_lệ": 0.054054}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 376A Nguyễn Thị Thập", "w27": 7, "w28": 7, "w29": 6, "w30": 2, "bán_w30": 74, "tỉ_lệ": 0.027027}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 479 Lê Văn Sỹ", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 18, "tỉ_lệ": 0.055556}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 512 Hồng Bàng", "w27": 2, "w28": 7, "w29": 2, "w30": 0, "bán_w30": 16, "tỉ_lệ": 0.0}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 739 Kinh Dương Vương", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 49, "tỉ_lệ": 0.020408}, {"asm": "ToanNN7@fpt.com", "vùng": "Hồ Chí Minh", "shop": "HCM 781B Huỳnh Tấn Phát", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 10, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 109 Tây Sơn - Phùng", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 134 Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 50, "tỉ_lệ": 0.02}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 237 Xuân Phương", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 23, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 299 Trung Kính - Tầng 1 Housing", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 46, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 302 Hồ Tùng Mậu - Cầu Diễn", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 49, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 338 Đại Mỗ", "w27": 0, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 26, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI 787 Chùa Tổng - Hoài Đức", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Khu Phố Mới -Thạch Thất", "w27": 0, "w28": 1, "w29": 3, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Kim Chung - Đông Anh", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Mai Đình - Sóc Sơn", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Ngã 3 Hòa Lạc - Thạch Thất", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Thôn Thái Hòa - Thạch Thất", "w27": 1, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Tiền Phong - Mê Linh", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Tản Lĩnh - Ba Vì", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Tầng 1 Chợ Bưởi", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 49, "tỉ_lệ": 0.0}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Vân Lũng - An Khánh", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 10, "tỉ_lệ": 0.1}, {"asm": "TrangNTT76@fpt.com", "vùng": "Hà Nội", "shop": "HNI Đức Giang - Hoài Đức", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 09 Khu Minh Khai", "w27": 1, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 305 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 36 Nguyễn Văn Cừ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BGG 83 Phố Thanh Xuân", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 294 Minh Khai", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "BNH 338 Trần Phú", "w27": 1, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HNM 122 Lê Hoàn", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HNM 136 Đinh Tiên Hoàng", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HNM 297 Nguyễn Hữu Tiến", "w27": 1, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HNM 34 Biên Hòa", "w27": 3, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HNM 776 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN 177 Điện Biên", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN 39 Đường Điện Biên 1", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN Liêu Xá - Yên Mỹ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "HYN Trưng Trắc - Văn Lâm", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH 169 Quang Trung", "w27": 2, "w28": 1, "w29": 3, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH 351 Nguyễn Công Trứ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH 953 Trần Hưng Đạo", "w27": 1, "w28": 1, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TuVN2@fpt.com", "vùng": "Miền Bắc 2", "shop": "NBH Phố Bắc Sơn-Nho Quan", "w27": 1, "w28": 1, "w29": 3, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "CBG 1 Kim Đồng", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "CBG 44 Sông Bằng", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN 10 Xương Giang - Hữu Lũng", "w27": 1, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN 177 Hoàng Văn Thụ", "w27": 0, "w28": 0, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN 20 Trần Đăng Ninh", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN 50 Trần Phú", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "LSN Khu Hòa Bình - Lộc Bình", "w27": 2, "w28": 0, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 01 Đường Hạ Long", "w27": 2, "w28": 0, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 1 Hùng Vương", "w27": 4, "w28": 0, "w29": 3, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 113 Kênh Liêm", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 118 Nguyễn Du - Hải Hà", "w27": 2, "w28": 3, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 168 Trần Phú", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 295 Trần Phú - Cẩm Phả", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 331 Đường 279 - Hoành Bồ", "w27": 1, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 341 Đường 334 Cái Rồng", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 348 Cửa Ông", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 545 Lê Thánh Tông", "w27": 1, "w28": 3, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungDT30@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 7 Tầng- Thống Nhất", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 01 Thôn Dốc Lã - Gia Lâm", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 03 Nguyễn Thái Học", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 34, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 05 Hàng Giấy", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 45, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 141 Trương Định", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 46, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 15 Phố Chùa Thông", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 190 Xã Đàn", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 31, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 247 Định Công Thượng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 13, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 279 Đội Cấn", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 17, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 286 Kim Mã", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 32, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 495 Trương Định", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 97, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 54-K1 Thành Công", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 60, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI 7 Yên Phụ", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 50, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI Fstudio 269 Chùa Bộc", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 32, "tỉ_lệ": 0.03125}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI Fstudio 92 Hai Bà Trưng 2", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 58, "tỉ_lệ": 0.0}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI Ngã Tư Cầu Định Công", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 29, "tỉ_lệ": 0.034483}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI Ngã Tư Cổ Nhuế - Phạm Văn Đồng", "w27": 0, "w28": 0, "w29": 2, "w30": 1, "bán_w30": 37, "tỉ_lệ": 0.027027}, {"asm": "TungNS28@fpt.com", "vùng": "Hà Nội", "shop": "HNI Số 1 Vĩnh Hưng", "w27": 0, "w28": 2, "w29": 0, "w30": 2, "bán_w30": 78, "tỉ_lệ": 0.025641}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 133 Hùng Vương - Tháp Mười", "w27": 1, "w28": 3, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 162 Nguyễn Huệ", "w27": 2, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 1B ĐT852 - Sa Đéc", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 205 Nguyễn Sinh Sắc", "w27": 0, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 218 Đường 30/4", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 50 Phạm Hữu Lầu", "w27": 0, "w28": 1, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP 72 Hùng Vương", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "DTP Ấp 2 Mỹ Long - Cao Lãnh", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "KGG 331 Nguyễn Trung Trực", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "KGG 79 Nguyễn Văn Cừ", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "KGG Căn 15 Trần Quang Khải", "w27": 5, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "VuTH5@fpt.com", "vùng": "Miền Tây", "shop": "KGG Thửa đất 20 Dương Đông", "w27": 2, "w28": 2, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "BLU 148 Quốc Lộ 1A", "w27": 0, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "BLU 35 Trần Huỳnh", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "BLU 66 Hòa Bình-TP Bạc Liêu", "w27": 3, "w28": 1, "w29": 3, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "BLU 89 Hai Bà Trưng", "w27": 0, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "BLU Ấp Long Thành - Phước Long", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU 11 Trần Hưng Đạo", "w27": 2, "w28": 1, "w29": 0, "w30": 4, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU 149 Nguyễn Tất Thành", "w27": 1, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU 65 Dương Thị Cẩm Vân", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU Khóm 7 Sông Đốc", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU Khóm 7 Trần Văn Thời", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "CMU Khóm 8 Thới Bình", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "KGG 12 QL 80 Cư Xá Mới", "w27": 1, "w28": 1, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "KGG 156 Mạc Thiên Tích", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "KGG 504 Quốc Lộ 63", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "KGG 605 KP6 Hùng Vương - Giồng Riềng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "YenHB2@fpt.com", "vùng": "Miền Tây", "shop": "KGG Khu Phố 3 - An Minh", "w27": 0, "w28": 2, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 103 Quốc Lộ 5", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 108 Nguyễn Lương Bằng", "w27": 0, "w28": 0, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 128 Nguyễn Trãi -Sao Đỏ", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 179 Nguyễn Lương Bằng", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 202 Nguyễn Lương Bằng - Thanh Miện", "w27": 1, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 259 Lê Thanh Nghị", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 36 Trần Hưng Đạo", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG 83 Thống Nhất-Kẻ Sặt", "w27": 2, "w28": 3, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG Ngã 4 Đồng Tâm - Ninh Giang", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HDG Phố Ghẽ", "w27": 2, "w28": 2, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 112 Lạch Tray", "w27": 1, "w28": 0, "w29": 2, "w30": 2, "bán_w30": 87, "tỉ_lệ": 0.022989}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG 51A Hải Triều", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "HPG Tổ Dân Phố Đình - Thủy Nguyên", "w27": 0, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 10 Lê Lợi - Quảng Yên", "w27": 0, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 28 Trần Nhân Tông", "w27": 0, "w28": 1, "w29": 1, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 459 Cầu Đất", "w27": 1, "w28": 0, "w29": 1, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 498 Quang Trung", "w27": 0, "w28": 0, "w29": 0, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "dungdd2@fpt.com", "vùng": "Miền Bắc 1", "shop": "QNH 74-76 Vĩnh Thông", "w27": 0, "w28": 1, "w29": 1, "w30": 2, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 1253-1255 Tôn Đức Thắng", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 146 Phan Văn Trị - Phong Điền", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 198B đường 3/2", "w27": 3, "w28": 5, "w29": 5, "w30": 6, "bán_w30": 46, "tỉ_lệ": 0.130435}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 289 Nguyễn Văn Cừ", "w27": 1, "w28": 3, "w29": 1, "w30": 1, "bán_w30": 19, "tỉ_lệ": 0.052632}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 314 Quốc Lộ 91", "w27": 2, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 52 Đường 30/4", "w27": 0, "w28": 2, "w29": 1, "w30": 0, "bán_w30": 43, "tỉ_lệ": 0.0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO 83 Trần Hưng Đạo", "w27": 5, "w28": 3, "w29": 3, "w30": 6, "bán_w30": 50, "tỉ_lệ": 0.12}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "CTO G-198B Đường 3/2", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 12/4B Lê Thị Hồng Gấm", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 152 Lý Thường Kiệt", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 183 Ấp Bắc", "w27": 1, "w28": 3, "w29": 2, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 365 Quốc Lộ 1A", "w27": 1, "w28": 0, "w29": 3, "w30": 1, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 4/4 Ấp Rẫy", "w27": 3, "w28": 0, "w29": 0, "w30": 3, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG 658 Ấp Long Thạnh - Chợ Gạo", "w27": 1, "w28": 1, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG Hòa Khánh - Cái Bè", "w27": 0, "w28": 0, "w29": 2, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}, {"asm": "thaotd@FPT.COM", "vùng": "Miền Tây", "shop": "TGG Mỹ Phước Tây - Cai Lậy", "w27": 0, "w28": 0, "w29": 0, "w30": 0, "bán_w30": 0, "tỉ_lệ": 0}],
+  vungList: ["Hà Nội", "Hồ Chí Minh", "Miền Bắc 1", "Miền Bắc 2", "Miền Đông", "Miền Tây", "Miền Trung"]
+};
+
+
+const pct = (n,b) => b ? n/b : 0;
+const pStr = v => (v==null||isNaN(v)) ? '—' : (v*100).toFixed(2)+'%';
+const fmtN = v => (v==null||isNaN(v)) ? '—' : v.toLocaleString('vi-VN');
+const wCls = v => v>0?'up':v<0?'dn':'';
+const wSym = v => v>0?'▲':v<0?'▼ ':'';
+const escHtml = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let D = FULL_DATA;
+const sortState = {}
+
+// ============================================================
+// AUTO-LOAD: Tự động tải file Excel theo tuần từ GitHub
+// ============================================================
+const GITHUB_CONFIG = {
+  owner: 'dlquang011994',
+  repo: 'BC-F.Plus-Weekly',
+  branch: 'main',
+  getFileName: () => {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return 'Ty le khai thac F.Plus W' + String(weekNum).padStart(2, '0') + '.xlsx';
+  }
+};
+
+function getWeekFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const w = params.get('w');
+  if (w) return 'W' + w.padStart(2, '0');
+  return null;
+}
+
+async function loadFromGitHub(fileName) {
+  const url = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${encodeURIComponent(fileName)}`;
+  const statusEl = document.getElementById('st');
+  if (!statusEl) return false;
+  statusEl.textContent = `Đang tải ${fileName}...`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const buffer = await resp.arrayBuffer();
+    D = processWB(XLSX.read(buffer, {type:'array'}));
+    statusEl.textContent = `✓ Tải tự động: ${fileName}`;
+    refreshAll();
+    return true;
+  } catch(err) {
+    console.log('Không tải được:', err.message);
+    return false;
+  }
+}
+
+async function tryAutoLoad() {
+  let fileName = getWeekFromURL();
+  if (!fileName) {
+    fileName = GITHUB_CONFIG.getFileName();
+    fileName = 'Ty le khai thac F.Plus ' + fileName + '.xlsx';
+  } else {
+    fileName = 'Ty le khai thac F.Plus ' + fileName + '.xlsx';
+  }
+  
+  const success = await loadFromGitHub(fileName);
+  if (!success) {
+    await loadFromGitHub('Bản sao của ' + fileName);
+  }
+  if (!success) {
+    const st = document.getElementById('st');
+    if (st) st.textContent = 'Chưa có file. Vui lòng upload thủ công.';
+  }
+}
+// ============================================================
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  tryAutoLoad();
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById(t.dataset.p).classList.add('active');
+      setTimeout(resizeCharts, 10);
+    });
+  });
+
+  document.getElementById('fi').addEventListener('change', e => {
+    if (!e.target.files[0]) return;
+    const f = e.target.files[0];
+    document.getElementById('st').textContent = 'Đang xử lý…';
+    const r = new FileReader();
+    r.onload = ev => {
+      try {
+        D = processWB(XLSX.read(ev.target.result, {type:'array'}));
+        document.getElementById('st').textContent = '✓ ' + f.name;
+        refreshAll();
+      } catch(err) { alert('Lỗi: ' + err.message); }
+    };
+    r.readAsArrayBuffer(f);
+  });
+
+  document.getElementById('fVung').addEventListener('change', renderMain);
+  document.getElementById('fAV').addEventListener('change', () => { fillAA(); renderAsm(); });
+  document.getElementById('fAA').addEventListener('change', renderAsm);
+  document.getElementById('fAS').addEventListener('input', renderAsm);
+
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      const tbl = th.dataset.table;
+      const type = th.dataset.type || 's';
+      if (!sortState[tbl] || sortState[tbl].col !== col)
+        sortState[tbl] = {col, dir:'asc', type};
+      else
+        sortState[tbl].dir = sortState[tbl].dir === 'asc' ? 'desc' : 'asc';
+      document.querySelectorAll('#'+tbl+' th.sortable').forEach(x => {
+        x.classList.remove('sort-asc','sort-desc');
+        x.querySelector('.arr').textContent = '';
+      });
+      th.classList.add(sortState[tbl].dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      th.querySelector('.arr').textContent = sortState[tbl].dir === 'asc' ? '▲' : '▼';
+      if (tbl === 'tblMain') renderMain();
+      else if (tbl === 'tblLuy') renderLuyKe();
+      else if (tbl === 'tblVuong') renderVuong();
+      else if (tbl === 'tblAsm') renderAsm();
+    });
+  });
+
+  window.addEventListener('resize', () => setTimeout(resizeCharts, 10));
+
+  refreshAll();
+});
+
+function refreshAll() {
+  renderKpi();
+  fillFltV(); renderMain();
+  renderLuyKe();
+  fillFltA(); renderVuong(); renderAsm();
+  setTimeout(resizeCharts, 10);
+  document.getElementById('meta').textContent = 'Dữ liệu F.Plus — Generated ' + new Date().toLocaleString('vi-VN');
+}
+
+function resizeCharts() {
+  drawBar('cNhan', D.main.map(r=>r.vùng), [
+    {label:'W27', data:D.main.map(r=>r.w27), color:'#9ecae1'},
+    {label:'W28', data:D.main.map(r=>r.w28), color:'#6baed6'},
+    {label:'W29', data:D.main.map(r=>r.w29), color:'#4292c6'},
+    {label:'W30', data:D.main.map(r=>r.w30), color:'#1F3864'},
+  ]);
+  drawLine('cTyLe', D.main.map(r=>r.vùng), D.main.map(r=>r.wow_p));
+}
+
+function renderKpi() {
+  const k = D.kpi;
+  document.getElementById('kpi').innerHTML =
+    '<div class="card">'+
+      '<div class="lbl">Phiếu nhận</div>'+
+      '<div class="vals"><span class="w29">'+fmtN(k.n_w29)+'</span><span class="arr">→</span><span class="w30">'+fmtN(k.n_w30)+'</span></div>'+
+      '<div class="sub '+wCls(k.wow_n)+'">'+wSym(k.wow_n)+' '+fmtN(Math.abs(k.wow_n))+' phiếu so tuần trước</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="lbl">Volume bán (Shop vệ tinh)</div>'+
+      '<div class="vals"><span class="w29">'+fmtN(k.b_w29)+'</span><span class="arr">→</span><span class="w30">'+fmtN(k.b_w30)+'</span></div>'+
+      '<div class="sub">Tỉ lệ: '+pStr(k.tỉ_w29)+' → '+pStr(k.tỉ_w30)+'</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="lbl">Tỉ lệ khai thác</div>'+
+      '<div class="vals"><span class="w29">'+pStr(k.tỉ_w29)+'</span><span class="arr">→</span><span class="w30">'+pStr(k.tỉ_w30)+'</span></div>'+
+      '<div class="sub '+wCls(k.wow_p)+'">'+wSym(k.wow_p)+' '+(k.wow_p*100).toFixed(2)+'pp so tuần trước</div>'+
+    '</div>';
+}
+
+function drawBar(id, labels, series) {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.parentElement.offsetWidth - 24;
+  const H = c.parentElement.clientHeight - 50;
+  c.width = W; c.height = Math.max(H, 80);
+  c.style.width = W+'px'; c.style.height = c.height+'px';
+  const P = {l:48,r:16,t:56,b:40};
+  const cw = W-P.l-P.r, ch = c.height-P.t-P.b;
+  const n = labels.length;
+  const bw = (cw/n)*0.75;
+  const gs = bw/series.length;
+  const maxV = Math.max(...series.map(s => Math.max(...s.data,1)));
+  ctx.clearRect(0,0,W,c.height);
+  ctx.fillStyle='#888'; ctx.font='10px Segoe UI'; ctx.textAlign='right';
+  for (let i=0;i<=4;i++) {
+    const v = Math.round(maxV*i/4);
+    const y = P.t + ch - (v/maxV)*ch;
+    ctx.fillText(v, P.l-3, y+3);
+    ctx.beginPath(); ctx.strokeStyle='#eee'; ctx.lineWidth=1;
+    ctx.moveTo(P.l,y); ctx.lineTo(P.l+cw,y); ctx.stroke();
+  }
+  for (let i=0;i<n;i++) {
+    for (let j=0;j<series.length;j++) {
+      const v = series[j].data[i];
+      const bh = (v/maxV)*ch;
+      const bx = P.l + i*(cw/n) + ((cw/n)-bw)/2 + j*gs;
+      ctx.fillStyle = series[j].color;
+      ctx.fillRect(bx, P.t+ch-bh, gs-2, bh);
+      if (j===series.length-1 && v>0) {
+        ctx.fillStyle='#333'; ctx.font='9px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(v, bx+gs/2-1, P.t+ch-bh-2);
+      }
+    }
+    ctx.fillStyle='#555'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText(labels[i], P.l+i*(cw/n)+cw/n/2, P.t+ch+14);
+  }
+  let lx = P.l+4, ly = 16;
+  for (const s of series) {
+    ctx.fillStyle=s.color; ctx.fillRect(lx,ly,10,10);
+    ctx.fillStyle='#555'; ctx.font='11px Segoe UI'; ctx.textAlign='left';
+    ctx.fillText(s.label, lx+13, ly+9);
+    lx += 52;
+  }
+}
+
+function drawLine(id, labels, data) {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.parentElement.offsetWidth - 24;
+  const H = c.parentElement.clientHeight - 50;
+  c.width = W; c.height = Math.max(H, 80);
+  c.style.width = W+'px'; c.style.height = c.height+'px';
+  const P = {l:56,r:16,t:28,b:40};
+  const cw = W-P.l-P.r, ch = c.height-P.t-P.b;
+  const n = labels.length;
+  const mx = Math.max(...data.map(Math.abs), 0.05);
+  ctx.clearRect(0,0,W,c.height);
+  const zy = P.t + ch/2;
+  ctx.fillStyle='#888'; ctx.font='10px Segoe UI'; ctx.textAlign='right';
+  ctx.fillText('+'+(mx*100).toFixed(1)+'pp', P.l-4, P.t+8);
+  ctx.fillText('0', P.l-4, zy+3);
+  ctx.fillText('-'+(mx*100).toFixed(1)+'pp', P.l-4, P.t+ch+3);
+  ctx.beginPath(); ctx.strokeStyle='#ccc'; ctx.lineWidth=1;
+  ctx.moveTo(P.l,zy); ctx.lineTo(P.l+cw,zy); ctx.stroke();
+  ctx.strokeStyle='#f0f0f0';
+  for (let i=0;i<=3;i++) {
+    const y = P.t+ch*i/3;
+    ctx.beginPath(); ctx.moveTo(P.l,y); ctx.lineTo(P.l+cw,y); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.strokeStyle='#2E74B5'; ctx.lineWidth=2;
+  for (let i=0;i<n;i++) {
+    const x = P.l + i*(cw/(n-1||1));
+    const y = P.t + ch - ((data[i]/mx+1)/2)*ch;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  for (let i=0;i<n;i++) {
+    const x = P.l + i*(cw/(n-1||1));
+    const y = P.t + ch - ((data[i]/mx+1)/2)*ch;
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle = data[i]>=0?'#1E8C4C':'#C00000'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.fillStyle='#555'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText(labels[i], x, P.t+ch+14);
+  }
+}
+
+function mkCell(v, fmt) {
+  if (v == null || v === '') return '<span class="t-zero">—</span>';
+  if (typeof v === 'string') return escHtml(v);
+  if (fmt === 'pct') {
+    const cls = pctClass(v);
+    return '<span class="t-pct '+(v===0?'':'ratio '+cls)+'">'+(v===0?'—':pStr(v))+'</span>';
+  }
+  if (fmt === 'wow_n') {
+    if (v > 0) return '<span class="t-pos">+'+v+'</span>';
+    if (v < 0) return '<span class="t-neg">'+v+'</span>';
+    return '<span class="t-zero">—</span>';
+  }
+  if (fmt === 'wow_p') {
+    const s = (v>=0?'+':'')+(v*100).toFixed(2)+'%';
+    return '<span class="'+(v>=0?'t-pos':'t-neg')+'">'+s+'</span>';
+  }
+  return fmtN(v);
+}
+
+function mkRow(r, cols) {
+  let h = '<tr>';
+  for (const col of cols) h += '<td>'+mkCell(r[col.key],col.fmt||'')+'</td>';
+  return h+'</tr>';
+}
+
+function mkTot(cols, tot) {
+  let h = '<tr class="tot">';
+  for (const col of cols) h += '<td>'+mkCell(tot[col.key],col.fmt||'')+'</td>';
+  return h+'</tr>';
+}
+
+function applySort(rows, tbl) {
+  const s = sortState[tbl];
+  if (!s) return rows;
+  const a = rows.slice();
+  a.sort((x,y) => {
+    let cmp;
+    if (s.type === 'n') cmp = (x[s.col]||0)-(y[s.col]||0);
+    else cmp = String(x[s.col]||'').localeCompare(String(y[s.col]||''),'vi');
+    return s.dir==='asc' ? cmp : -cmp;
+  });
+  return a;
+}
+
+function makeBody(id, rows, cols, tot) {
+  const tb = document.querySelector('#'+id+' tbody');
+  tb.innerHTML = applySort(rows,id).map(r=>mkRow(r,cols)).join('') + (tot ? mkTot(cols,tot) : '');
+}
+
+function fillSelect(id, vals) {
+  document.getElementById(id).innerHTML =
+    '<option value="">Tất cả</option>' +
+    vals.map(v=>'<option value="'+escHtml(v)+'">'+escHtml(v)+'</option>').join('');
+}
+
+function fillFltV() { fillSelect('fVung', D.vungList); }
+
+function renderMain() {
+  const fv = document.getElementById('fVung').value;
+  const rows = fv ? D.main.filter(r=>r.vùng===fv) : D.main;
+  const k = D.kpi;
+  const cols = [
+    {key:'vùng'},
+    {key:'w27',fmt:'n'},{key:'w28',fmt:'n'},{key:'w29',fmt:'n'},{key:'w30',fmt:'n'},
+    {key:'tổng',fmt:'n'},{key:'wow_n',fmt:'wow_n'},{key:'wow_p',fmt:'wow_p'}
+  ];
+  const tot = fv ? null : {
+    vùng:'Tổng',
+    w27:D.main.reduce((s,r)=>s+r.w27,0),
+    w28:D.main.reduce((s,r)=>s+r.w28,0),
+    w29:D.main.reduce((s,r)=>s+r.w29,0),
+    w30:D.main.reduce((s,r)=>s+r.w30,0),
+    tổng:D.main.reduce((s,r)=>s+r.tổng,0),
+    wow_n:k.wow_n,wow_p:k.wow_p
+  };
+  makeBody('tblMain', rows, cols, tot);
+}
+
+function renderLuyKe() {
+  const cols = [
+    {key:'vùng'},
+    {key:'th3',fmt:'pct'},{key:'th4',fmt:'pct'},{key:'th5',fmt:'pct'},
+    {key:'th6',fmt:'pct'},{key:'th7',fmt:'pct'}
+  ];
+  makeBody('tblLuy', D.luyke.rows, cols, D.luyke.tot);
+}
+
+function renderVuong() {
+  const cols = [
+    {key:'vùng'},
+    {key:'w27',fmt:'n'},{key:'w28',fmt:'n'},{key:'w29',fmt:'n'},{key:'w30',fmt:'n'},
+    {key:'tổng',fmt:'n'},{key:'bán_w30',fmt:'n'},{key:'tỉ_lệ',fmt:'pct'}
+  ];
+  makeBody('tblVuong', D.vuong.rows, cols, D.vuong.rows2 && D.vuong.rows2[0]);
+}
+
+function fillFltA() { fillSelect('fAV', D.vungList); fillAA(); }
+
+function fillAA() {
+  const fv = document.getElementById('fAV').value;
+  const asms = [...new Set((fv ? D.asm.filter(r=>r.vùng===fv) : D.asm).map(r=>r.asm))].sort();
+  fillSelect('fAA', asms);
+}
+
+function renderAsm() {
+  const fv = document.getElementById('fAV').value;
+  const fa = document.getElementById('fAA').value;
+  const fs = document.getElementById('fAS').value.toLowerCase();
+  let rows = D.asm;
+  if (fv) rows = rows.filter(r=>r.vùng===fv);
+  if (fa) rows = rows.filter(r=>r.asm===fa);
+  if (fs) rows = rows.filter(r=>(r.shop||'').toLowerCase().includes(fs));
+  const cols = [
+    {key:'asm'},{key:'vùng'},{key:'shop'},
+    {key:'w27',fmt:'n'},{key:'w28',fmt:'n'},{key:'w29',fmt:'n'},{key:'w30',fmt:'n'},
+    {key:'bán_w30',fmt:'n'},{key:'tỉ_lệ',fmt:'pct'}
+  ];
+  const tot = rows.length ? {
+    asm:'Tổng ('+rows.length+' shops)', vùng:'', shop:'',
+    w27:rows.reduce((s,r)=>s+r.w27,0), w28:rows.reduce((s,r)=>s+r.w28,0),
+    w29:rows.reduce((s,r)=>s+r.w29,0), w30:rows.reduce((s,r)=>s+r.w30,0),
+    bán_w30:rows.reduce((s,r)=>s+r.bán_w30,0),
+    tỉ_lệ: rows.reduce((s,r)=>s+r.w30,0)/Math.max(1,rows.reduce((s,r)=>s+r.bán_w30,0))
+  } : null;
+  makeBody('tblAsm', rows, cols, tot);
+}
+
+function pctClass(v) {
+  if (v >= 0.05) return 'ratio-green';
+  if (v > 0)     return 'ratio-yellow';
+  if (v < 0)     return 'ratio-red';
+  return '';
+}
+
+function processWB(wb) {
+  const sh = {};
+  for (const n of wb.SheetNames) sh[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], {defval:''});
+  const VU = ['Hà Nội','Hồ Chí Minh','Miền Bắc 1','Miền Bắc 2','Miền Đông','Miền Tây','Miền Trung'];
+  const MO = [3,4,5,6,7];
+  const d1 = sh['Volume phiếu nhận'] || [];
+  const d2 = (sh['Volume bán'] || []).filter(r => r['Shop vệ tinh'] === 'Shop vệ tinh');
+  const dA = (sh['SL shop nhận máy F.Plus vùng'] || []).filter(r => r['Shop']);
+  const n_vw = {}, n_vm = {}, b_vw = {}, b_vm = {};
+  for (const v of VU) { n_vw[v] = {}; n_vm[v] = {}; b_vw[v] = {}; b_vm[v] = {}; }
+  for (const r of d1) {
+    const v = String(r['Vùng kinh doanh shop']||'').trim();
+    const w = String(r['Tuần']||'').trim();
+    const m = Number(r['Tháng']);
+    if (!VU.includes(v)) continue;
+    n_vw[v][w] = (n_vw[v][w]||0)+1;
+    if (!isNaN(m)) n_vm[v][m] = (n_vm[v][m]||0)+1;
+  }
+  for (const r of d2) {
+    const v = String(r['Vùng kinh doạnh']||'').trim();
+    const w = String(r['Tuần']||'').trim();
+    const m = Number(r['Tháng']);
+    if (!VU.includes(v)) continue;
+    b_vw[v][w] = (b_vw[v][w]||0)+1;
+    if (!isNaN(m)) b_vm[v][m] = (b_vm[v][m]||0)+1;
+  }
+  const nW29=VU.reduce((s,v)=>s+(n_vw[v]['W29']||0),0);
+  const nW30=VU.reduce((s,v)=>s+(n_vw[v]['W30']||0),0);
+  const bW29=VU.reduce((s,v)=>s+(b_vw[v]['W29']||0),0);
+  const bW30=VU.reduce((s,v)=>s+(b_vw[v]['W30']||0),0);
+  const wow_n=nW30-nW29;
+  const wow_p=pct(nW30,bW30)-pct(nW29,bW29);
+  const main = VU.map(v => {
+    const w27=n_vw[v]['W27']||0,w28=n_vw[v]['W28']||0,w29=n_vw[v]['W29']||0,w30=n_vw[v]['W30']||0;
+    return {vùng:v,w27,w28,w29,w30,tổng:w27+w28+w29+w30,
+            wow_n:w30-w29,
+            wow_p:pct(w30,b_vw[v]['W30']||0)-pct(w29,b_vw[v]['W29']||0)};
+  });
+  const lk_rows = VU.map(v => {
+    const row = {vùng:v};
+    for (const m of MO) row['th'+m] = pct(n_vm[v][m]||0,b_vm[v][m]||0);
+    return row;
+  });
+  const lk_tot = {vùng:'Tổng'};
+  for (const m of MO) lk_tot['th'+m] = pct(VU.reduce((s,v)=>s+(n_vm[v][m]||0),0),VU.reduce((s,v)=>s+(b_vm[v][m]||0),0));
+  const vuong = VU.map(v => {
+    const w27=n_vw[v]['W27']||0,w28=n_vw[v]['W28']||0,w29=n_vw[v]['W29']||0,w30=n_vw[v]['W30']||0;
+    const b30=b_vw[v]['W30']||0;
+    return {vùng:v,w27,w28,w29,w30,tổng:w27+w28+w29+w30,bán_w30:b30,tỉ_lệ:pct(w30,b30)};
+  });
+  const vuong_tot = {vùng:'Tổng',w27:VU.reduce((s,v)=>s+(n_vw[v]['W27']||0),0),
+    w28:VU.reduce((s,v)=>s+(n_vw[v]['W28']||0),0),w29:VU.reduce((s,v)=>s+(n_vw[v]['W29']||0),0),
+    w30:nW30,tổng:VU.reduce((s,v)=>s+(n_vw[v]['W27']||0)+(n_vw[v]['W28']||0)+(n_vw[v]['W29']||0)+(n_vw[v]['W30']||0),0),
+    bán_w30:bW30,tỉ_lệ:pct(nW30,bW30)};
+  const sn = {};
+  for (const r of d1) {
+    const shop=String(r['Cửa hàng']||'').trim(), w=String(r['Tuần']||'').trim();
+    if (!shop) continue;
+    if (!sn[shop]) sn[shop]={};
+    sn[shop][w]=(sn[shop][w]||0)+1;
+  }
+  const sb = {};
+  for (const r of d2) {
+    const shop=String(r['Shop Name']||'').trim(), w=String(r['Tuần']||'').trim();
+    if (!shop) continue;
+    if (!sb[shop]) sb[shop]={};
+    sb[shop][w]=(sb[shop][w]||0)+1;
+  }
+  const asm = dA.map(r => {
+    const shop=String(r['Shop']||'').trim();
+    const w27=sn[shop]?.['W27']||0,w28=sn[shop]?.['W28']||0,w29=sn[shop]?.['W29']||0,w30=sn[shop]?.['W30']||0;
+    const b30=sb[shop]?.['W30']||0;
+    return {asm:String(r['ASM']||'').trim(),vùng:String(r['Vùng']||'').trim(),shop,w27,w28,w29,w30,bán_w30:b30,tỉ_lệ:pct(w30,b30)};
+  })
+  .filter(r => r.vùng && VU.includes(r.vùng))
+  .sort((a,b) => (a.asm||'').localeCompare(b.asm||'') || (a.vùng||'').localeCompare(b.vùng||'') || (a.shop||'').localeCompare(b.shop||''));
+  return {
+    kpi:{n_w29:nW29,n_w30:nW30,b_w29:bW29,b_w30:bW30,tỉ_w29:pct(nW29,bW29),tỉ_w30:pct(nW30,bW30),wow_n,wow_p},
+    main, luyke:{rows:lk_rows,tot:lk_tot},
+    vuong:{rows:vuong,rows2:[vuong_tot]},
+    asm, vungList:VU
+  };
+}
+</script>
+</body>
+</html>

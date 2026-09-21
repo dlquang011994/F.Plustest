@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F.PLUS — Dashboard Khai Thác V2.0 (Auto-Sync)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --fpt-blue: #1250A2;
+  --fpt-orange: #F26D21;
+  --fpt-green: #50B848;
+  --border-color: #e5e7eb;
+  --bg-body: #F4F7F9;
+  --text-main: #333333;
+  --bg-green: #dcfce7; --text-green: #15803d;
+  --bg-red: #fee2e2;   --text-red: #b91c1c;
+  --bg-yellow: #fef3c7; --text-yellow: #a16207;
+}
+
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+  background: #cbd5e1; 
+  padding: 20px;
+  color: var(--text-main);
+}
+
+.report-wrapper {
+  max-width: 1800px; 
+  width: 98%;
+  margin: 0 auto;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 1100px; 
+}
+
+.header { 
+  background: #ffffff; 
+  color: var(--fpt-blue); 
+  padding: 16px 24px;
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  flex-wrap: wrap; 
+  gap: 10px; 
+  border-bottom: 2px solid var(--border-color);
+  position: relative;
+}
+.header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--fpt-blue) 0%, var(--fpt-orange) 50%, var(--fpt-green) 100%);
+}
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+
+.btn-upload { 
+  background: var(--fpt-orange); 
+  color: #FFFFFF; 
+  border: none;
+  padding: 8px 18px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 600; 
+  font-size: 13px; 
+  transition: all 0.2s ease;
+}
+.btn-upload:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 3px 6px rgba(242, 109, 33, 0.3); }
+
+.main-layout { display: flex; flex-grow: 1; }
+
+.sidebar { 
+  width: 260px; 
+  background: var(--fpt-blue); 
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 16px;
+}
+.tab { 
+  padding: 16px 24px; 
+  color: rgba(255, 255, 255, 0.7); 
+  cursor: pointer; 
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  border: none; 
+  background: transparent; 
+  border-left: 4px solid transparent; 
+  transition: all 0.2s ease;
+}
+.tab:hover { color: #FFFFFF; background: rgba(255,255,255,0.05); }
+.tab.active { 
+  background: rgba(255,255,255,0.1); 
+  color: #ffffff; 
+  border-left: 4px solid var(--fpt-orange); 
+  font-weight: 600;
+}
+
+.content { 
+  flex-grow: 1; 
+  padding: 24px 30px; 
+  background: var(--bg-body); 
+  width: calc(100% - 260px); 
+}
+
+.kpi-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+.kpi-card { 
+  background: #fff; 
+  border-radius: 6px;
+  padding: 18px 20px; 
+  flex: 1; 
+  min-width: 180px; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06); 
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  background: var(--fpt-blue);
+}
+.kpi-card:nth-child(2)::before { background: var(--fpt-orange); }
+.kpi-card:nth-child(3)::before { background: var(--fpt-green); }
+
+.kpi-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.kpi-card .value { font-size: 28px; font-weight: 700; color: var(--text-main); margin: 8px 0; }
+.kpi-card .sub { font-size: 12px; color: #6b7280; font-weight: 500; }
+.kpi-card .sub.up { color: var(--text-green); }
+.kpi-card .sub.dn { color: var(--text-red); }
+
+.chart-box { 
+  background: #fff; 
+  border-radius: 6px; 
+  padding: 20px; 
+  margin-bottom: 24px; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06); 
+}
+.chart-title { font-size: 14px; color: var(--text-main); margin-bottom: 12px; font-weight: 600; text-transform: uppercase; }
+canvas#barChart { max-width: 100%; }
+
+.tbl-wrap { 
+  background: #fff; 
+  border-radius: 6px; 
+  margin-bottom: 24px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06); 
+  overflow: hidden; 
+}
+.tbl-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: 16px 20px; 
+  border-bottom: 1px solid var(--border-color); 
+  flex-wrap: wrap; 
+  gap: 12px; 
+}
+.tbl-name { font-size: 15px; font-weight: 600; color: var(--fpt-blue); cursor: pointer; text-transform: uppercase;}
+.tbl-name:hover { text-decoration: underline; }
+.tbl-filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.tbl-filters select, .tbl-filters input {
+  border: 1px solid #d1d5db; 
+  border-radius: 4px; 
+  padding: 6px 12px; 
+  font-size: 13px; 
+  color: #374151;
+  outline: none;
+}
+.tbl-filters select:focus, .tbl-filters input:focus { border-color: var(--fpt-blue); }
+.tbl-filters input { width: 180px; }
+
+.table-responsive { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { 
+  background: var(--fpt-blue); color: #fff; padding: 10px 12px; 
+  text-align: right; cursor: pointer; white-space: nowrap; 
+  position: relative; user-select: none; font-weight: 600;
+}
+th.txt-l { text-align: left; }
+th.sorted-asc::after { content: ' \25B2'; color: var(--fpt-orange); margin-left: 4px; }
+th.sorted-desc::after { content: ' \25BC'; color: var(--fpt-orange); margin-left: 4px; }
+
+td { 
+  padding: 9px 12px; text-align: right; border-bottom: 1px solid #f3f4f6; 
+  color: #4b5563; white-space: nowrap; 
+}
+td.txt-l { text-align: left; font-weight: 500; color: #111827; white-space: normal; min-width: 120px; }
+tr:hover td { background: #f9fafb; color: #111827; }
+
+tr.tot { background: var(--fpt-blue) !important; }
+tr.tot td { border-bottom: none; color: #fff !important; font-weight: 700; }
+tr.tot:hover td { background: var(--fpt-blue) !important; }
+
+.cell-green { color: var(--fpt-green); font-weight: 700; }
+.cell-orange { color: var(--fpt-orange); font-weight: 700; }
+.cell-up { background: var(--bg-green); color: var(--text-green); font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.cell-dn { background: var(--bg-red); color: var(--text-red); font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.cell-z { background: var(--bg-yellow); color: var(--text-yellow); font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#fileInput { display: none; }
+#loading-overlay { 
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(18, 80, 162, 0.85); z-index: 9999; color: white; 
+  font-size: 20px; font-weight: 600; text-align: center; padding-top: 20%; 
+  backdrop-filter: blur(4px);
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">Đang kết nối Google Drive, vui lòng chờ...</div>
+
+<div class="report-wrapper">
+  
+  <div class="header">
+    <h1>F.PLUS — Dashboard Khai Thác V2.0 (Auto-Sync)</h1>
+    <button class="btn-upload" onclick="document.getElementById('fileInput').click()">Dự phòng: Upload file</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+  </div>
+
+  <div class="main-layout">
+    
+    <div class="sidebar">
+      <button class="tab active" onclick="switchTab(this, 'tab1')">Tổng quan</button>
+      <button class="tab" onclick="switchTab(this, 'tab2')">Chi tiết</button>
+    </div>
+
+    <div class="content">
+      
+      <div id="tab1" class="tab-content active">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="label">Phiếu nhận <span id="kpi-w-cur"></span></div>
+            <div class="value" id="kpi-n">-</div>
+            <div class="sub" id="kpi-n-sub">Đang đồng bộ...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Phiếu bán shop <span id="kpi-w2"></span></div>
+            <div class="value" id="kpi-ban">-</div>
+            <div class="sub" id="kpi-ban-sub">Đang đồng bộ...</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Tỉ lệ khai thác <span id="kpi-w3"></span></div>
+            <div class="value" id="kpi-ti">-</div>
+            <div class="sub" id="kpi-ti-sub">Đang đồng bộ...</div>
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title" id="combo-chart-title">TỈ LỆ</div>
+          <div style="position: relative; height: 450px; width: 100%;">
+            <canvas id="comboChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-title">Phiếu nhận theo tuần</div>
+          <canvas id="barChart" height="400"></canvas>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-header">
+            <span class="tbl-name" ondblclick="renameTbl(this)">Phiếu nhận 4 tuần gần nhất</span>
+            <div class="tbl-filters">
+              <select id="f-vung-main" onchange="filterMain()"><option value="">Tất cả Vùng</option></select>
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #4b5563; padding: 12px 20px 4px 20px; line-height: 1.6; background: #f9fafb; border-bottom: 1px solid var(--border-color);">
+            <ul style="margin-left: 20px;">
+              <li><strong>Phiếu theo tuần:</strong> Tổng phiếu nhận vào của tuần</li>
+              <li><strong>Tỉ lệ tuần:</strong> Tổng phiếu nhận vào của tuần / tổng máy bán ra của tuần (Phân loại F.Plus có thể xử lý)</li>
+              <li><strong>SL tăng/Giảm:</strong> Phiếu nhận vào chênh lệch giữa 2 tuần mới nhất</li>
+              <li><strong>Tỉ lệ tăng/Giảm:</strong> Tỉ lệ chênh lệch giữa 2 tuần mới nhất</li>
+            </ul>
+          </div>
+          <div class="table-responsive">
+          <table id="tbl-main"><thead id="thead-main"></thead><tbody id="tbody-main"></tbody></table>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-header">
+            <span class="tbl-name" ondblclick="renameTbl(this)">Luỹ kế tỉ lệ theo tháng</span>
+          </div>
+          <div class="table-responsive">
+          <table id="tbl-luyke"><thead id="thead-luyke"></thead><tbody id="tbody-luyke"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab2" class="tab-content">
+        <div class="tbl-wrap">
+          <div class="tbl-header">
+            <span class="tbl-name" ondblclick="renameTbl(this)">Phiếu nhận 4 tuần gần nhất theo Vùng</span>
+            <div class="tbl-filters">
+              <select id="f-vung-vuong" onchange="filterVuong()"><option value="">Tất cả Vùng</option></select>
+            </div>
+          </div>
+          <div class="table-responsive">
+          <table id="tbl-vuong"><thead id="thead-vuong"></thead><tbody id="tbody-vuong"></tbody></table>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-header">
+            <span class="tbl-name" ondblclick="renameTbl(this)">Phiếu theo ASM</span>
+            <div class="tbl-filters">
+              <select id="f-vung-asm" onchange="onVungChange()"><option value="">Tất cả Vùng</option></select>
+              <select id="f-asm" onchange="filterAsm()"><option value="">Tất cả ASM</option></select>
+              <input type="text" id="f-shop" placeholder="Tìm shop..." oninput="filterAsm()">
+            </div>
+          </div>
+          <div class="table-responsive">
+          <table id="tbl-asm"><thead id="thead-asm"></thead><tbody id="tbody-asm"></tbody></table>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-header">
+            <span class="tbl-name" ondblclick="renameTbl(this)">Phiếu theo Shop</span>
+            <div class="tbl-filters">
+              <select id="f-loai-shop" onchange="filterShop()">
+                <option value="svt">Shop vệ tinh</option>
+                <option value="khong">Không phải shop vệ tinh</option>
+                <option value="all">Tất cả</option>
+              </select>
+              <select id="f-vung-shop" onchange="filterShop()"><option value="">Tất cả Vùng</option></select>
+              <select id="f-asm-shop" onchange="filterShop()"><option value="">Tất cả ASM</option></select>
+              <input type="text" id="f-shop-txt" placeholder="Tìm shop..." oninput="filterShop()">
+            </div>
+          </div>
+          <div class="table-responsive">
+          <table id="tbl-shop"><thead id="thead-shop"></thead><tbody id="tbody-shop"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+let DATA = null;
+let sortState = {};
+let comboChartInstance = null; 
+
+function renderAll() {
+  if (!DATA || !DATA.kpi) return;
+  renderKPI();
+  renderComboChart();
+  renderBarChart();
+  buildFilters();
+  renderMain(DATA.main_rows);
+  renderLuyKe();
+  filterVuong();
+  filterAsm();
+  filterShop();
+}
+
+function renderKPI() {
+  const k = DATA.kpi;
+  const wCur = k.w_cur, wPrv = k.w_prv;
+  document.getElementById('kpi-w-cur').textContent = wCur;
+  document.getElementById('kpi-w2').textContent = wCur;
+  document.getElementById('kpi-w3').textContent = wCur;
+
+  document.getElementById('kpi-n').textContent = k.n_cur.toLocaleString();
+  const nSub = document.getElementById('kpi-n-sub');
+  nSub.textContent = (k.wow_n >= 0 ? '+' : '') + k.wow_n.toLocaleString() + ' so ' + wPrv;
+  nSub.className = 'sub ' + (k.wow_n >= 0 ? 'up' : 'dn');
+
+  document.getElementById('kpi-ban').textContent = k.ban_svt_cur.toLocaleString();
+  const wowBan = k.ban_svt_cur - k.ban_svt_prv;
+  const banSub = document.getElementById('kpi-ban-sub');
+  banSub.textContent = (wowBan >= 0 ? '+' : '') + wowBan.toLocaleString() + ' so ' + wPrv;
+  banSub.className = 'sub ' + (wowBan >= 0 ? 'up' : 'dn');
+
+  document.getElementById('kpi-ti').textContent = (k.ti_le_cur * 100).toFixed(2) + '%';
+  const tiSub = document.getElementById('kpi-ti-sub');
+  tiSub.textContent = (k.wow_ti_le >= 0 ? '+' : '') + (k.wow_ti_le * 100).toFixed(2) + '% so ' + wPrv;
+  tiSub.className = 'sub ' + (k.wow_ti_le >= 0 ? 'up' : 'dn');
+}
+
+function renderComboChart() {
+  const canvas = document.getElementById('comboChart');
+  if (!canvas || !DATA) return;
+  const ctx = canvas.getContext('2d');
+  
+  document.getElementById('combo-chart-title').textContent = 'TỈ LỆ ' + DATA.w_cur;
+
+  let cData = DATA.vuong_rows.map(r => ({
+    vung: r.vùng,
+    ban: r.ban_w_cur || 0,
+    nhan: r[DATA.w_cur.toLowerCase()] || 0,
+    tile: r.ti_le || 0
+  }));
+  cData.sort((a, b) => b.ban - a.ban);
+
+  const labels = cData.map(d => d.vung);
+  const banData = cData.map(d => d.ban);
+  const nhanData = cData.map(d => d.nhan);
+  const tileData = cData.map(d => d.tile);
+
+  if (typeof ChartDataLabels !== 'undefined') {
+      Chart.register(ChartDataLabels);
+  }
+
+  if (window.comboChartInstance) {
+    window.comboChartInstance.destroy();
+  }
+
+  window.comboChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'line',
+          label: 'Tỉ lệ',
+          data: tileData,
+          yAxisID: 'y1',
+          borderColor: '#F26D21',
+          backgroundColor: '#F26D21',
+          borderWidth: 2,
+          pointBackgroundColor: '#F26D21',
+          pointRadius: 4,
+          order: 1,
+          datalabels: {
+            align: 'top',
+            anchor: 'end',
+            offset: 4,
+            color: '#6b7280',
+            font: { size: 12, weight: 'bold' },
+            formatter: function(value) { return (value * 100).toFixed(2) + '%'; }
+          }
+        },
+        {
+          type: 'bar',
+          label: 'Shop bán',
+          data: banData,
+          yAxisID: 'y',
+          backgroundColor: '#3b82f6',
+          barPercentage: 0.6,
+          categoryPercentage: 0.7,
+          order: 2,
+          datalabels: {
+            align: 'top',
+            anchor: 'end',
+            color: '#6b7280',
+            font: { size: 11 },
+            formatter: function(value) { return value.toLocaleString('en-US'); } 
+          }
+        },
+        {
+          type: 'bar',
+          label: 'F.Plus nhận',
+          data: nhanData,
+          yAxisID: 'y',
+          backgroundColor: '#1250A2',
+          barPercentage: 0.6,
+          categoryPercentage: 0.7,
+          order: 3,
+          datalabels: {
+            align: 'top',
+            anchor: 'end',
+            color: '#6b7280',
+            font: { size: 11 },
+            formatter: function(value) { return value.toLocaleString('en-US'); } 
+          }
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: 20 } },
+      plugins: {
+        legend: { 
+          position: 'top', 
+          labels: { usePointStyle: true, boxWidth: 8, font: { weight: 'bold' } } 
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.dataset.yAxisID === 'y1') {
+                label += (context.raw * 100).toFixed(2) + '%';
+              } else {
+                label += context.raw.toLocaleString('en-US'); 
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: { display: true, text: 'Shop bán and F.Plus nhận', color: '#6b7280', font: { weight: 'bold' } },
+          ticks: {
+            callback: function(value) { return value.toLocaleString('en-US'); } 
+          },
+          grid: { color: '#e5e7eb' }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: { display: true, text: 'Tỉ lệ', color: '#6b7280', font: { weight: 'bold' } },
+          grid: { drawOnChartArea: false },
+          min: 0,
+          suggestedMax: 0.20,
+          ticks: {
+            stepSize: 0.05, 
+            callback: function(value) { return (value * 100).toFixed(0) + '%'; }
+          }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderBarChart() {
+  const canvas = document.getElementById('barChart');
+  if (!canvas || !DATA || !DATA.weeks) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.parentElement.offsetWidth;
+  canvas.width = w;
+
+  const weeks = DATA.weeks;
+  const regions = DATA.main_rows || [];
+  const colors = ['#8EB4E6', '#5C90D2', '#336FBC', '#1250A2'];
+
+  const startX = 40, startY = 30, chartH = 380; 
+  canvas.height = chartH + 70;
+  ctx.clearRect(0, 0, w, chartH + 70);
+
+  let maxV = 0;
+  regions.forEach(r => {
+    weeks.forEach(wk => {
+      const v = r[wk.toLowerCase()] || 0;
+      if (v > maxV) maxV = v;
+    });
+  });
+  maxV = Math.ceil(maxV / 50) * 50 || 50;
+  const chartW = w - startX - 10;
+
+  ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#6b7280'; ctx.font = '11px Arial'; ctx.textAlign = 'right';
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const y = startY + chartH - (chartH * i / ySteps);
+    ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(startX + chartW, y); ctx.stroke();
+    ctx.fillText(Math.round(maxV * i / ySteps), startX - 8, y + 4);
+  }
+
+  ctx.strokeStyle = '#9ca3af';
+  ctx.beginPath(); ctx.moveTo(startX, startY + chartH); ctx.lineTo(startX + chartW, startY + chartH); ctx.stroke();
+
+  const groupW = chartW / regions.length;
+  const barW = (groupW * 0.7) / weeks.length;
+
+  regions.forEach((r, ri) => {
+    const groupX = startX + ri * groupW + (groupW - groupW * 0.7) / 2;
+    weeks.forEach((wk, wi) => {
+      const v = r[wk.toLowerCase()] || 0;
+      const barH = (v / maxV) * chartH;
+      const x = groupX + wi * barW;
+      const y = startY + chartH - barH;
+      ctx.fillStyle = colors[wi] || colors[colors.length-1];
+      ctx.fillRect(x, y, barW - 2, barH);
+      if (v > 0) {
+        ctx.fillStyle = '#374151'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(v, x + barW / 2 - 1, y - 4);
+      }
+    });
+    ctx.fillStyle = '#111827'; ctx.font = '600 11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(r.vùng, startX + ri * groupW + groupW / 2, startY + chartH + 18);
+  });
+
+  const legendY = 12;
+  let legendX = startX + 20;
+  ctx.font = 'bold 12px Arial'; ctx.textAlign = 'left';
+  weeks.forEach((wk, i) => {
+    ctx.fillStyle = colors[i] || colors[colors.length-1];
+    ctx.fillRect(legendX, legendY - 9, 14, 10);
+    ctx.fillStyle = '#374151';
+    ctx.fillText(wk, legendX + 18, legendY);
+    legendX += 70;
+  });
+}
+
+function buildFilters() {
+  const vungs = DATA.vùng_list || [];
+  const asms = DATA.asm_list || [];
+  const asmVungMap = {};
+  vungs.forEach(v => { asmVungMap[v.trim().toLowerCase()] = []; });
+  
+  (DATA.asm_rows || []).forEach(r => {
+    const vk = (r.vùng || '').trim().toLowerCase();
+    if (!asmVungMap[vk]) asmVungMap[vk] = [];
+    if (!asmVungMap[vk].includes(r.asm)) asmVungMap[vk].push(r.asm);
+  });
+  window._asmVungMap = asmVungMap;
+  window._allAsms = asms;
+
+  ['f-vung-main','f-vung-vuong','f-vung-asm','f-vung-shop'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Tất cả Vùng</option>';
+    vungs.forEach(v => { sel.innerHTML += '<option value="' + v + '">' + v + '</option>'; });
+  });
+
+  ['f-asm', 'f-asm-shop'].forEach(id => {
+    const asmSel = document.getElementById(id);
+    if (asmSel) {
+      asmSel.innerHTML = '<option value="">Tất cả ASM</option>';
+      asms.forEach(a => { asmSel.innerHTML += '<option value="' + a + '">' + a + '</option>'; });
+    }
+  });
+}
+
+function onVungChange() {
+  const vSel = document.getElementById('f-vung-asm');
+  const aSel = document.getElementById('f-asm');
+  if (!vSel || !aSel) return;
+  const vKey = vSel.value.trim().toLowerCase();
+  aSel.innerHTML = '<option value="">Tất cả ASM</option>';
+  const list = vKey ? (window._asmVungMap[vKey] || []) : (window._allAsms || []);
+  list.forEach(a => { aSel.innerHTML += '<option value="' + a + '">' + a + '</option>'; });
+  filterAsm();
+}
+
+function pct(n, dec=2) {
+  if (typeof n !== 'number' || n === 0) return '—';
+  return (n * 100).toFixed(dec) + '%';
+}
+function deltaClass(v) {
+  if (v > 0) return 'cell-up';
+  if (v < 0) return 'cell-dn';
+  return 'cell-z';
+}
+function deltaSign(v) {
+  if (v > 0) return '▲ +' + Math.abs(v);
+  if (v < 0) return '▼ ' + v;
+  return '— 0';
+}
+function tiLeClass(v) {
+  return v >= 0.05 ? 'cell-green' : 'cell-orange';
+}
+function escAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildThead(tblId, headers, colKeys) {
+  const thead = document.getElementById('thead-' + tblId);
+  let html = '<tr>';
+  headers.forEach((h, i) => {
+    const isText = ['vùng', 'asm', 'shop'].includes(colKeys[i].toLowerCase());
+    const cls = isText ? 'txt-l' : '';
+    html += '<th class="' + cls + '" onclick="sortTbl(\'' + tblId + '\',' + i + ')" data-col="' + escAttr(colKeys[i]) + '">' + h + '</th>';
+  });
+  html += '</tr>';
+  thead.innerHTML = html;
+}
+
+function buildTbody(tblId, rows, totRow, cols, fmtFn) {
+  const tbody = document.getElementById('tbody-' + tblId);
+  let html = '';
+  rows.forEach(r => {
+    html += '<tr>';
+    cols.forEach((c, i) => {
+      const v = r[c];
+      const isText = ['vùng', 'asm', 'shop'].includes(c.toLowerCase());
+      const cls = isText ? 'txt-l' : '';
+      const val = fmtFn ? fmtFn(c, v, r) : (v || 0);
+      html += '<td class="' + cls + '">' + val + '</td>';
+    });
+    html += '</tr>';
+  });
+  if (totRow) {
+    html += '<tr class="tot">';
+    cols.forEach((c, i) => {
+      const v = totRow[c];
+      const isText = ['vùng', 'asm', 'shop'].includes(c.toLowerCase());
+      const cls = isText ? 'txt-l' : '';
+      const val = fmtFn ? fmtFn(c, v, totRow) : (v || 0);
+      html += '<td class="' + cls + '">' + val + '</td>';
+    });
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function sortTbl(tblId, colIdx) {
+  const tbody = document.getElementById('tbody-' + tblId);
+  const rows = Array.from(tbody.querySelectorAll('tr:not(.tot)'));
+  const head = document.getElementById('thead-' + tblId);
+  const ths = head.querySelectorAll('th');
+  const prev = sortState[tblId] || {};
+  ths.forEach(t => { t.classList.remove('sorted-asc','sorted-desc'); });
+  let dir = 'asc';
+  if (prev.col === colIdx) dir = prev.dir === 'asc' ? 'desc' : 'asc';
+  else dir = 'desc';
+  sortState[tblId] = { col: colIdx, dir };
+  ths[colIdx].classList.add(dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+  const firstCell = rows[0] && rows[0].cells[colIdx];
+  const isNum = firstCell && !isNaN(parseFloat(firstCell.textContent.replace(/[^0-9.\-]/g,'')));
+
+  rows.sort((a, b) => {
+    const va = a.cells[colIdx].textContent.trim();
+    const vb = b.cells[colIdx].textContent.trim();
+    if (isNum) {
+      const na = parseFloat(va.replace(/[^0-9.\-]/g,'')) || 0;
+      const nb = parseFloat(vb.replace(/[^0-9.\-]/g,'')) || 0;
+      return dir === 'asc' ? na - nb : nb - na;
+    }
+    return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+  rows.forEach(r => tbody.insertBefore(r, tbody.querySelector('.tot')));
+}
+
+function renameTbl(el) {
+  const inp = document.createElement('input');
+  inp.value = el.textContent;
+  inp.style.cssText = 'border:1px solid #aaa; border-radius:3px; padding:4px 8px; font-size:14px; font-weight:600; color:var(--fpt-blue); width:300px; outline:none;';
+  inp.onblur = () => { el.textContent = inp.value || el.textContent; el.style.display = ''; inp.remove(); };
+  inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { inp.value = el.dataset.orig || ''; inp.blur(); } };
+  inp.dataset.orig = el.textContent;
+  el.style.display = 'none';
+  el.parentNode.insertBefore(inp, el);
+  inp.focus();
+}
+
+function filterMain() {
+  if (!DATA) return;
+  const vF = document.getElementById('f-vung-main').value;
+  const rows = vF ? DATA.main_rows.filter(r => r.vùng === vF) : [].concat(DATA.main_rows);
+  renderMain(rows);
+}
+
+function renderMain(rows) {
+  if (!DATA) return;
+  const weeks = DATA.weeks;
+  const tot = DATA.main_tot;
+
+  rows.forEach(r => {
+    let totalBan = 0;
+    weeks.forEach(wk => {
+      const wKey = wk.toLowerCase();
+      const vuongRow = DATA.vuong_rows.find(vr => vr.vùng === r.vùng) || {};
+      const banW = vuongRow['ban_' + wKey] || 0;
+      totalBan += banW;
+      r['pct_' + wKey] = banW > 0 ? (r[wKey] || 0) / banW : 0;
+    });
+    r['pct_tổng'] = totalBan > 0 ? (r.tổng || 0) / totalBan : 0;
+  });
+
+  let grandTotalBan = 0;
+  weeks.forEach(wk => {
+    const wKey = wk.toLowerCase();
+    const totalBanW = DATA.vuong_rows.reduce((sum, vr) => sum + (vr['ban_' + wKey] || 0), 0);
+    grandTotalBan += totalBanW;
+    tot['pct_' + wKey] = totalBanW > 0 ? (tot[wKey] || 0) / totalBanW : 0;
+  });
+  
+  tot['pct_tổng'] = grandTotalBan > 0 ? (tot.tổng || 0) / grandTotalBan : 0;
+
+  let headers = ['Vùng'];
+  let cols = ['vùng'];
+
+  weeks.forEach(wk => {
+    headers.push('Phiếu ' + wk);
+    cols.push(wk.toLowerCase());
+    
+    headers.push('Tỉ lệ ' + wk);
+    cols.push('pct_' + wk.toLowerCase());
+  });
+
+  headers.push('Tổng', 'Tỉ lệ Tổng', 'SL Tăng/Giảm', 'Tỉ lệ tăng/giảm');
+  cols.push('tổng', 'pct_tổng', 'sl_tang_giam', 'ti_le_tang_giam');
+
+  const fmtFn = (c, v) => {
+    if (c.startsWith('pct_')) {
+      return (v * 100).toFixed(2) + '%';
+    }
+    if (c === 'ti_le_tang_giam') {
+      return '<span class="' + deltaClass(v) + '">' + (v >= 0 ? '+' : '') + (v*100).toFixed(2) + '%</span>';
+    }
+    if (c === 'sl_tang_giam') {
+      return '<span class="' + deltaClass(v) + '">' + deltaSign(v) + '</span>';
+    }
+    return v;
+  };
+
+  buildThead('main', headers, cols);
+  buildTbody('main', rows, tot, cols, fmtFn);
+}
+
+function renderLuyKe() {
+  if (!DATA || !DATA.months) return;
+  const months = DATA.months;
+  
+  if (months.length === 0) {
+    document.getElementById('thead-luyke').innerHTML = '<tr><th class="txt-l">Vùng</th><th>Dữ liệu</th></tr>';
+    document.getElementById('tbody-luyke').innerHTML = '<tr><td class="txt-l">Chưa có dữ liệu</td><td>Chưa có phiếu tháng 9</td></tr>';
+    return;
+  }
+
+  const m_cur = months[months.length - 1];
+  const m_prv = months.length > 1 ? months[months.length - 2] : '';
+
+  let headers = ['Vùng'].concat(months.map(m => 'Th.' + m));
+  if (m_prv) {
+      headers.push('% Tăng/Giảm (Th.' + m_cur + ' so Th.' + m_prv + ')');
+  } else {
+      headers.push('% Tăng/Giảm');
+  }
+  
+  let cols   = ['vùng'].concat(months.map(m => 'Th' + m)).concat(['tang_giam']);
+  
+  const fmtFn = (c, v) => {
+    if (c === 'tang_giam') return '<span class="' + deltaClass(v) + '">' + (v >= 0 ? '+' : '') + (v*100).toFixed(2) + '%</span>';
+    if (c === 'vùng') return v;
+    return pct(v);
+  };
+  buildThead('luyke', headers, cols);
+  buildTbody('luyke', DATA.luyke_rows, DATA.luyke_tot, cols, fmtFn);
+}
+
+function filterVuong() {
+  if (!DATA) return;
+  const vF = document.getElementById('f-vung-vuong').value;
+  const rows = vF ? DATA.vuong_rows.filter(r => r.vùng === vF) : [].concat(DATA.vuong_rows);
+  const weeks = DATA.weeks;
+  const wCur = DATA.w_cur;
+  const headers = ['Vùng'].concat(weeks).concat(['Tổng', 'Phiếu bán ' + wCur, 'Tỉ lệ']);
+  const cols   = ['vùng'].concat(weeks.map(w => w.toLowerCase())).concat(['tổng', 'ban_w_cur', 'ti_le']);
+  const fmtFn = (c, v) => {
+    if (c === 'ti_le') return '<span class="' + tiLeClass(v) + '">' + pct(v) + '</span>';
+    return v;
+  };
+  buildThead('vuong', headers, cols);
+  buildTbody('vuong', rows, DATA.vuong_tot, cols, fmtFn);
+}
+
+function filterAsm() {
+  if (!DATA) return;
+  const vF = document.getElementById('f-vung-asm').value;
+  const aF = document.getElementById('f-asm').value;
+  const sF = (document.getElementById('f-shop') || {}).value || '';
+  let rows = [].concat(DATA.asm_rows);
+
+  if (vF) rows = rows.filter(r => r.vùng === vF);
+  if (aF) rows = rows.filter(r => r.asm === aF);
+  if (sF) {
+    const sf = sF.trim().toLowerCase();
+    const matchAsms = (DATA.shop_rows || []).filter(sr => (sr.shop || '').toLowerCase().includes(sf)).map(sr => sr.asm);
+    rows = rows.filter(r => matchAsms.includes(r.asm));
+  }
+  
+  const w_cur = DATA.w_cur;
+  const w_prv = DATA.w_prv;
+  const headers = ['ASM','Vùng', w_prv, w_cur,'Tăng/Giảm','Phiếu bán ' + w_cur,'Tỉ lệ'];
+  const cols   = ['asm','vùng', w_prv.toLowerCase(), w_cur.toLowerCase(),'tang_giam','ban_w_cur','ti_le'];
+  const fmtFn = (c, v) => {
+    if (c === 'tang_giam') return '<span class="' + deltaClass(v) + '">' + deltaSign(v) + '</span>';
+    if (c === 'ti_le') return '<span class="' + tiLeClass(v) + '">' + pct(v) + '</span>';
+    return v;
+  };
+  buildThead('asm', headers, cols);
+  
+  const tot = { asm:'Tổng', vùng:'', tang_giam: 0, ban_w_cur: 0, ti_le: 0 };
+  tot[w_prv.toLowerCase()] = 0;
+  tot[w_cur.toLowerCase()] = 0;
+  rows.forEach(r => {
+    tot[w_prv.toLowerCase()] += r[w_prv.toLowerCase()]||0;
+    tot[w_cur.toLowerCase()] += r[w_cur.toLowerCase()]||0;
+    tot.tang_giam += r.tang_giam||0;
+    tot.ban_w_cur += r.ban_w_cur||0;
+  });
+  tot.ti_le = tot.ban_w_cur > 0 ? tot[w_cur.toLowerCase()] / tot.ban_w_cur : 0;
+  buildTbody('asm', rows, tot, cols, fmtFn);
+}
+
+function filterShop() {
+  if (!DATA) return;
+  const loaiF = document.getElementById('f-loai-shop').value;
+  const vF = document.getElementById('f-vung-shop').value;
+  const aF = document.getElementById('f-asm-shop').value;
+  const sF = (document.getElementById('f-shop-txt') || {}).value || '';
+
+  let rows = [].concat(DATA.shop_rows || []);
+  if (loaiF === 'svt') rows = rows.filter(r => r.svt === true);
+  else if (loaiF === 'khong') rows = rows.filter(r => r.svt === false);
+  
+  if (vF) rows = rows.filter(r => r.vùng === vF);
+  if (aF) rows = rows.filter(r => r.asm === aF);
+  if (sF) {
+    const sf = sF.trim().toLowerCase();
+    rows = rows.filter(r => (r.shop || '').toLowerCase().includes(sf) || (r.asm || '').toLowerCase().includes(sf));
+  }
+  
+  const weeks = DATA.weeks;
+  const headers = ['ASM','Vùng','Shop'].concat(weeks).concat(['Phiếu bán ' + DATA.w_cur, 'Tỉ lệ']);
+  const cols   = ['asm','vùng','shop'].concat(weeks.map(w => w.toLowerCase())).concat(['ban_w_cur', 'ti_le']);
+  const fmtFn = (c, v) => {
+    if (c === 'ti_le') {
+      if (!v) return '<span class="cell-orange">—</span>';
+      return '<span class="' + tiLeClass(v) + '">' + pct(v) + '</span>';
+    }
+    return v;
+  };
+  buildThead('shop', headers, cols);
+  
+  const totW = weeks.map(w => 0);
+  let totBan = 0;
+  rows.forEach(r => {
+    weeks.forEach((w,i) => totW[i] += (r[w.toLowerCase()]||0));
+    totBan += (r.ban_w_cur||0);
+  });
+  const totTiLe = totBan > 0 ? totW[totW.length-1] / totBan : 0;
+  const tot = { asm:'Tổng', vùng:'', shop:'(' + rows.length + ' shops)', ban_w_cur: totBan, ti_le: totTiLe };
+  weeks.forEach((w,i) => { tot[w.toLowerCase()] = totW[i]; });
+  
+  buildTbody('shop', rows, tot, cols, fmtFn);
+}
+
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  setTimeout(() => {
+    renderBarChart();
+    if (window.comboChartInstance) window.comboChartInstance.resize();
+  }, 50);
+}
+window.addEventListener('resize', () => { if (DATA) renderBarChart(); });
+
+// ================= HÀM XỬ LÝ LÕI EXCEL TO DATA =================
+function processExcelBuffer(arrayBuffer) {
+  const wb = XLSX.read(arrayBuffer, {type: 'array'});
+  
+  const snNhan = wb.SheetNames.find(n => n.trim().toLowerCase() === 'volume phiếu nhận');
+  const snBan = wb.SheetNames.find(n => n.trim().toLowerCase() === 'volume bán');
+  const snDanhba = wb.SheetNames.find(n => n.trim().toLowerCase() === 'danhba');
+  const snSVT = wb.SheetNames.find(n => n.trim().toLowerCase() === 'shop vệ tinh');
+  
+  if (!snNhan || !snBan) {
+    throw new Error('Thiếu sheet "Volume phiếu nhận" hoặc "Volume bán" trong file Drive!');
+  }
+
+  const wsNhan = wb.Sheets[snNhan];
+  const wsBan = wb.Sheets[snBan];
+  const wsDanhba = snDanhba ? wb.Sheets[snDanhba] : null;
+
+  const dataNhan = XLSX.utils.sheet_to_json(wsNhan, {defval: ""});
+  const dataBan = XLSX.utils.sheet_to_json(wsBan, {defval: ""});
+  const dataDanhba = wsDanhba ? XLSX.utils.sheet_to_json(wsDanhba, {defval: ""}) : [];
+  const dataSVT = snSVT ? XLSX.utils.sheet_to_json(wb.Sheets[snSVT], {defval: ""}) : [];
+
+  const norm = (s) => (s||'').toString().trim();
+  
+  let svtSet = new Set();
+  dataSVT.forEach(r => {
+     let s = norm(r['Shop'] || r['Cửa hàng']).toLowerCase();
+     if (s) svtSet.add(s);
+  });
+
+  let shopToVung = {};
+  let shopToAsm = {};
+  let allAsms = new Set();
+  let allVungs = new Set();
+  let shopToOrig = {};
+  let asmOrig = {};
+
+  dataDanhba.forEach(r => {
+    let sRaw = norm(r['Cửa hàng']);
+    let sKey = sRaw.toLowerCase();
+    let v = norm(r['Vùng miền']);
+    let aRaw = norm(r['Email ASM']);
+    
+    if (sKey) {
+      shopToOrig[sKey] = sRaw;
+      if (v && v.toLowerCase() !== 'loại') {
+        shopToVung[sKey] = v;
+        allVungs.add(v);
+      }
+      if (aRaw) {
+        let aKey = aRaw.toLowerCase();
+        shopToAsm[sKey] = aKey;
+        asmOrig[aKey] = aRaw;
+        allAsms.add(aRaw);
+      }
+    }
+  });
+
+  dataNhan.forEach(r => {
+    let sRaw = norm(r['Cửa hàng']);
+    let sKey = sRaw.toLowerCase();
+    let v = norm(r['Vùng kinh doanh shop']);
+    if (v.toLowerCase() === 'loại') return; 
+    
+    if (sKey) {
+      shopToOrig[sKey] = sRaw;
+      if (v && !shopToVung[sKey]) shopToVung[sKey] = v;
+    }
+    if (v) allVungs.add(v);
+  });
+
+  let weeksSet = new Set();
+  let monthsSet = new Set();
+
+  dataNhan.forEach(r => {
+    let w = norm(r['Tuần']).toUpperCase();
+    if (w && w.startsWith('W')) weeksSet.add(w);
+    let m = norm(r['Tháng']);
+    if (m) monthsSet.add(m);
+  });
+  dataBan.forEach(r => {
+    let w = norm(r['Tuần']).toUpperCase();
+    if (w && w.startsWith('W')) weeksSet.add(w);
+    let m = norm(r['Tháng']);
+    if (m) monthsSet.add(m);
+  });
+
+  let weeksArr = Array.from(weeksSet).sort((a,b) => (parseInt(a.replace(/[^0-9]/g,''))||0) - (parseInt(b.replace(/[^0-9]/g,''))||0));
+  let latestWeeks = weeksArr.slice(-4);
+  let w_cur = latestWeeks[latestWeeks.length - 1] || "";
+  let w_prv = latestWeeks[latestWeeks.length - 2] || "";
+  
+  let monthsArrRaw = Array.from(monthsSet).sort((a,b) => (parseInt(a.replace(/[^0-9]/g,''))||0) - (parseInt(b.replace(/[^0-9]/g,''))||0));
+  
+  // [CẤU HÌNH] Đổi thành "false" nếu muốn hiển thị LẠI TOÀN BỘ các tháng từ đầu năm
+  const CHI_HIEN_TU_THANG_9 = true; 
+  let monthsArr = monthsArrRaw;
+  if (CHI_HIEN_TU_THANG_9) {
+      monthsArr = monthsArrRaw.filter(m => (parseInt(m.replace(/[^0-9]/g,''))||0) >= 9);
+  }
+
+  let vungStats = {};
+  let asmStats = {};
+  let shopStats = {};
+
+  allVungs.forEach(v => {
+    vungStats[v] = { nhan_all_w: {}, ban_svt_w: {}, nhan_all_m: {}, ban_svt_m: {} };
+    latestWeeks.forEach(wk => { vungStats[v].nhan_all_w[wk]=0; vungStats[v].ban_svt_w[wk]=0; });
+    monthsArr.forEach(m => { vungStats[v].nhan_all_m[m]=0; vungStats[v].ban_svt_m[m]=0; });
+  });
+
+  const getShopStat = (sKey, fallbackName) => {
+    if (!shopStats[sKey]) {
+       let orig = shopToOrig[sKey] || fallbackName || sKey;
+       let v = shopToVung[sKey] || 'Khác';
+       let aKey = shopToAsm[sKey];
+       let aOrig = aKey ? (asmOrig[aKey] || aKey) : '';
+       shopStats[sKey] = { shopName: orig, vung: v, asm: aOrig, asmKey: aKey, svt: svtSet.has(sKey), nhan_all_w: {}, ban_svt_cur: 0 };
+       latestWeeks.forEach(wk => shopStats[sKey].nhan_all_w[wk] = 0);
+    }
+    return shopStats[sKey];
+  };
+  
+  for (let sKey in shopToVung) {
+    getShopStat(sKey, shopToOrig[sKey]);
+  }
+  
+  const getAsmStat = (aKey, fallbackName) => {
+    if (!asmStats[aKey]) {
+       let orig = asmOrig[aKey] || fallbackName || aKey;
+       let v = ''; 
+       for(let sK in shopToAsm) { if(shopToAsm[sK]===aKey) { v = shopToVung[sK]; break; } }
+       asmStats[aKey] = { asmName: orig, vung: v||'Khác', nhan_all_w: {}, ban_svt_cur: 0 };
+       latestWeeks.forEach(wk => asmStats[aKey].nhan_all_w[wk] = 0);
+    }
+    return asmStats[aKey];
+  };
+
+  let kpi_n_cur = 0, kpi_n_prv = 0;
+  
+  dataNhan.forEach(r => {
+    let sRaw = norm(r['Cửa hàng']);
+    if (!sRaw) return; 
+    let sKey = sRaw.toLowerCase();
+    
+    let v = shopToVung[sKey] || norm(r['Vùng kinh doanh shop']);
+    if (v.toLowerCase() === 'loại') return; 
+    let aKey = shopToAsm[sKey];
+    
+    let w = norm(r['Tuần']).toUpperCase();
+    let m = norm(r['Tháng']);
+
+    if (!vungStats[v]) { vungStats[v] = { nhan_all_w: {}, ban_svt_w: {}, nhan_all_m: {}, ban_svt_m: {} }; allVungs.add(v); }
+
+    if (m && monthsArr.includes(m)) vungStats[v].nhan_all_m[m] = (vungStats[v].nhan_all_m[m] || 0) + 1;
+    if (latestWeeks.includes(w)) {
+      vungStats[v].nhan_all_w[w] = (vungStats[v].nhan_all_w[w] || 0) + 1;
+      if (w === w_cur) kpi_n_cur++;
+      if (w === w_prv) kpi_n_prv++;
+      getShopStat(sKey, sRaw).nhan_all_w[w] = (getShopStat(sKey, sRaw).nhan_all_w[w] || 0) + 1;
+      if (aKey) getAsmStat(aKey).nhan_all_w[w] = (getAsmStat(aKey).nhan_all_w[w] || 0) + 1;
+    }
+  });
+
+  let kpi_ban_svt_cur = 0, kpi_ban_svt_prv = 0;
+  
+  dataBan.forEach(r => {
+    let sRaw = norm(r['Shop Name'] || r['Cửa hàng']);
+    if (!sRaw) return;
+    let sKey = sRaw.toLowerCase();
+
+    let phanLoai = norm(r['Phân loại'] || r['Phân Loại']);
+    if (!phanLoai && Object.keys(r).length >= 4) {
+        phanLoai = norm(r[Object.keys(r)[3]]);
+    }
+    if (phanLoai.toLowerCase() !== 'lấy') return; 
+
+    let v = norm(r['Vùng kinh doạnh'] || r['Vùng kinh doanh']) || shopToVung[sKey] || 'Khác';
+    if (v.toLowerCase() === 'loại') return; 
+    let aKey = shopToAsm[sKey];
+    let w = norm(r['Tuần']).toUpperCase();
+    let m = norm(r['Tháng']);
+
+    if (!vungStats[v]) { vungStats[v] = { nhan_all_w: {}, ban_svt_w: {}, nhan_all_m: {}, ban_svt_m: {} }; allVungs.add(v); }
+    if (m && monthsArr.includes(m)) vungStats[v].ban_svt_m[m] = (vungStats[v].ban_svt_m[m] || 0) + 1;
+    if (latestWeeks.includes(w)) {
+      vungStats[v].ban_svt_w[w] = (vungStats[v].ban_svt_w[w] || 0) + 1;
+      if (w === w_cur) kpi_ban_svt_cur++;
+      if (w === w_prv) kpi_ban_svt_prv++;
+      if (w === w_cur) {
+        getShopStat(sKey, sRaw).ban_svt_cur++;
+        if (aKey) getAsmStat(aKey).ban_svt_cur++;
+      }
+    }
+  });
+
+  let NEW_DATA = {
+    weeks: latestWeeks,
+    months: monthsArr,
+    w_cur: w_cur, w_prv: w_prv,
+    kpi: {
+      n_cur: kpi_n_cur, n_prv: kpi_n_prv, wow_n: kpi_n_cur - kpi_n_prv,
+      ban_svt_cur: kpi_ban_svt_cur, ban_svt_prv: kpi_ban_svt_prv,
+      ti_le_cur: kpi_ban_svt_cur > 0 ? kpi_n_cur / kpi_ban_svt_cur : 0,
+      ti_le_prv: kpi_ban_svt_prv > 0 ? kpi_n_prv / kpi_ban_svt_prv : 0,
+      w_cur: w_cur, w_prv: w_prv
+    },
+    vùng_list: Array.from(allVungs).filter(v => v !== 'Khác').sort(),
+    asm_list: Array.from(allAsms).sort()
+  };
+  NEW_DATA.kpi.wow_ti_le = NEW_DATA.kpi.ti_le_cur - NEW_DATA.kpi.ti_le_prv;
+
+  let main_rows = [];
+  let main_tot = { vùng: 'Tổng', tổng: 0, sl_tang_giam: 0 };
+  latestWeeks.forEach(wk => main_tot[wk.toLowerCase()] = 0);
+
+  for (let v in vungStats) {
+    if (v === 'Khác' || !allVungs.has(v)) continue;
+    let st = vungStats[v], row = { vùng: v, tổng: 0 };
+    latestWeeks.forEach(wk => {
+       let wKey = wk.toLowerCase();
+       let val = st.nhan_all_w[wk] || 0; 
+       row[wKey] = val;
+       row.tổng += val;
+       main_tot[wKey] += val;
+       main_tot.tổng += val;
+    });
+    
+    let n_cur = st.nhan_all_w[w_cur] || 0, n_prv = st.nhan_all_w[w_prv] || 0;
+    
+    row.sl_tang_giam = n_cur - n_prv;
+    main_tot.sl_tang_giam += row.sl_tang_giam;
+    row.ti_le_tang_giam = n_prv > 0 ? (n_cur - n_prv) / n_prv : (n_cur > 0 ? 1 : 0);
+    
+    main_rows.push(row);
+  }
+  
+  let tot_n_cur = main_tot[w_cur.toLowerCase()] || 0;
+  let tot_n_prv = main_tot[w_prv.toLowerCase()] || 0;
+  main_tot.ti_le_tang_giam = tot_n_prv > 0 ? (tot_n_cur - tot_n_prv) / tot_n_prv : (tot_n_cur > 0 ? 1 : 0);
+  
+  NEW_DATA.main_rows = main_rows.sort((a,b)=>a.vùng.localeCompare(b.vùng));
+  NEW_DATA.main_tot = main_tot;
+
+  let luyke_rows = [];
+  let luyke_tot = { vùng: 'Tổng', tang_giam: 0 };
+  monthsArr.forEach(m => luyke_tot['Th' + m] = 0);
+  let tot_n_m = {}, tot_b_m = {};
+  monthsArr.forEach(m => { tot_n_m[m] = 0; tot_b_m[m] = 0; });
+  let m_cur = monthsArr.length > 0 ? monthsArr[monthsArr.length - 1] : null;
+  let m_prv = monthsArr.length > 1 ? monthsArr[monthsArr.length - 2] : null;
+
+  for (let v in vungStats) {
+    if (v === 'Khác' || !allVungs.has(v)) continue;
+    let st = vungStats[v], row = { vùng: v };
+    monthsArr.forEach(m => {
+       let n = st.nhan_all_m[m] || 0, b = st.ban_svt_m[m] || 0;
+       row['Th' + m] = b > 0 ? n / b : 0;
+       tot_n_m[m] += n; tot_b_m[m] += b;
+    });
+    row.tang_giam = m_cur ? ((row['Th' + m_cur] || 0) - (row['Th' + m_prv] || 0)) : 0;
+    luyke_rows.push(row);
+  }
+  monthsArr.forEach(m => luyke_tot['Th' + m] = tot_b_m[m] > 0 ? tot_n_m[m] / tot_b_m[m] : 0);
+  luyke_tot.tang_giam = m_cur ? ((luyke_tot['Th' + m_cur] || 0) - (luyke_tot['Th' + m_prv] || 0)) : 0;
+  NEW_DATA.luyke_rows = luyke_rows.sort((a,b)=>a.vùng.localeCompare(b.vùng));
+  NEW_DATA.luyke_tot = luyke_tot;
+
+  let vuong_rows = [];
+  let vuong_tot = { vùng: 'Tổng', tổng: 0, ban_w_cur: 0 };
+  latestWeeks.forEach(wk => vuong_tot[wk.toLowerCase()] = 0);
+
+  for (let v in vungStats) {
+    if (v === 'Khác' || !allVungs.has(v)) continue;
+    let st = vungStats[v], row = { vùng: v, tổng: 0 };
+    latestWeeks.forEach(wk => {
+       let wKey = wk.toLowerCase();
+       let val = st.nhan_all_w[wk] || 0; 
+       row[wKey] = val;
+       row.tổng += val;
+       vuong_tot[wKey] += val;
+       vuong_tot.tổng += val;
+       // Lưu thêm số bán của từng tuần để bảng Main tính tỉ lệ
+       row['ban_' + wKey] = st.ban_svt_w[wk] || 0; 
+    });
+    row.ban_w_cur = st.ban_svt_w[w_cur] || 0;
+    row.ti_le = row.ban_w_cur > 0 ? (row[w_cur.toLowerCase()] || 0) / row.ban_w_cur : 0;
+    vuong_tot.ban_w_cur += row.ban_w_cur;
+    vuong_rows.push(row);
+  }
+  vuong_tot.ti_le = vuong_tot.ban_w_cur > 0 ? (vuong_tot[w_cur.toLowerCase()] || 0) / vuong_tot.ban_w_cur : 0;
+  NEW_DATA.vuong_rows = vuong_rows.sort((a,b)=>a.vùng.localeCompare(b.vùng));
+  NEW_DATA.vuong_tot = vuong_tot;
+
+  let asm_rows = [];
+  for (let aKey in asmStats) {
+    let st = asmStats[aKey], row = { asm: st.asmName, asmKey: aKey, vùng: st.vung, ban_w_cur: st.ban_svt_cur };
+    let n_cur = st.nhan_all_w[w_cur] || 0, n_prv = st.nhan_all_w[w_prv] || 0;
+    row[w_prv.toLowerCase()] = n_prv;
+    row[w_cur.toLowerCase()] = n_cur;
+    row.tang_giam = n_cur - n_prv;
+    row.ti_le = row.ban_w_cur > 0 ? n_cur / row.ban_w_cur : 0;
+    asm_rows.push(row);
+  }
+  NEW_DATA.asm_rows = asm_rows.sort((a,b)=>a.asm.localeCompare(b.asm));
+
+  let shop_rows = [];
+  for (let sKey in shopStats) {
+    let st = shopStats[sKey], row = { shop: st.shopName, asm: st.asm, vùng: st.vung, svt: st.svt, tổng: 0, ban_w_cur: st.ban_svt_cur };
+    latestWeeks.forEach(wk => {
+       let val = st.nhan_all_w[wk] || 0;
+       row[wk.toLowerCase()] = val;
+       row.tổng += val;
+    });
+    let n_cur = row[w_cur.toLowerCase()] || 0;
+    row.ti_le = row.ban_w_cur > 0 ? n_cur / row.ban_w_cur : 0;
+    shop_rows.push(row);
+  }
+  NEW_DATA.shop_rows = shop_rows.sort((a,b)=>a.shop.localeCompare(b.shop));
+
+  DATA = NEW_DATA;
+  document.getElementById('loading-overlay').style.display = 'none';
+  renderAll();
+}
+
+// ================= HÀM KÉO DATA TỪ GOOGLE DRIVE =================
+async function loadDataFromDrive() {
+  document.getElementById('loading-overlay').style.display = 'block';
+  
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZGLwWIcCqTCAjVW0FyEQCQYvQ1MP3O5HRiFsQ6tZoN3DEDXq9ys59pXtNrTSA8w/pub?output=xlsx";
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network Error');
+    const arrayBuffer = await response.arrayBuffer();
+    processExcelBuffer(arrayBuffer);
+  } catch (error) {
+    console.error(error);
+    document.getElementById('loading-overlay').style.display = 'none';
+    alert('Không thể tải tự động từ Google Drive. Vui lòng tải file thủ công bằng nút phía trên.');
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('loading-overlay').style.display = 'block';
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      processExcelBuffer(evt.target.result);
+      e.target.value = ''; 
+    } catch(err) {
+      document.getElementById('loading-overlay').style.display = 'none';
+      alert('Đã xảy ra lỗi khi xử lý file Excel. Lỗi: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadDataFromDrive();
+});
+</script>
+</body>
+</html>
